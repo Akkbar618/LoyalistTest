@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "532522794483",
+    "project_id": "testployalist",
+    "storage_bucket": "testployalist.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:532522794483:android:9cadf456e776a54397a686",
+        "android_client_info": {
+          "package_name": "com.example.loyalisttest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHJ379aXE8soRN1jkkPvawr4tTz1YoQ-0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
