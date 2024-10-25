@@ -23,7 +23,7 @@ import com.example.loyalisttest.R
 @Composable
 fun WelcomeScreen(
     onNavigateToSignIn: () -> Unit = {},
-    onNavigateToSignUp: () -> Unit = {}
+    onNavigateToSignUp: () -> Unit = {},
 ) {
     val constraints = ConstraintSet {
         val picture = createRefFor("picture")
