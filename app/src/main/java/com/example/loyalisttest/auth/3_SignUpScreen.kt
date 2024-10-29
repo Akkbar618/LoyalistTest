@@ -1,51 +1,109 @@
 package com.example.loyalisttest.auth
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layoutId
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import com.example.loyalisttest.R
+import com.example.loyalisttest.components.AuthButton
+import com.example.loyalisttest.components.AuthTextField
+import com.example.loyalisttest.components.BackButton
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.auth.auth
 
 @Composable
 fun SignUpScreen(
     onBackClick: () -> Unit,
     onSignUpClick: (name: String, email: String, password: String) -> Unit,
-    onSignInClick: () -> Unit
+    onSignInClick: () -> Unit,
+    auth: FirebaseAuth? = Firebase.auth
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
-    var isConfirmPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = Color.Black,
-        unfocusedBorderColor = Color.Gray,
-        focusedLabelColor = Color.Black,
-        unfocusedLabelColor = Color.Gray,
-        focusedLeadingIconColor = Color.Black,
-        unfocusedLeadingIconColor = Color.Gray,
-        focusedTrailingIconColor = Color.Black,
-        unfocusedTrailingIconColor = Color.Gray
-    )
+    val context = LocalContext.current
+
+    fun validateInput(): Boolean {
+        if (name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+            Toast.makeText(context, "Заполните все поля", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        if (password != confirmPassword) {
+            Toast.makeText(context, "Пароли не совпадают", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        if (password.length < 6) {
+            Toast.makeText(context, "Пароль должен быть не менее 6 символов", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        return true
+    }
+
+    fun handleSignUp(name: String, email: String, password: String) {
+        if (!validateInput()) return
+
+        if (auth == null) {
+            onSignUpClick(name, email, password)
+            return
+        }
+
+        isLoading = true
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val profileUpdates = UserProfileChangeRequest.Builder()
+                        .setDisplayName(name)
+                        .build()
+
+                    auth.currentUser?.updateProfile(profileUpdates)
+                        ?.addOnCompleteListener { profileTask ->
+                            isLoading = false
+                            if (profileTask.isSuccessful) {
+                                Log.d("SignUpScreen", "Регистрация успешна")
+                                Toast.makeText(
+                                    context,
+                                    "Регистрация успешна",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                onSignUpClick(name, email, password)
+                            } else {
+                                Log.e("SignUpScreen", "Ошибка обновления профиля", profileTask.exception)
+                                Toast.makeText(
+                                    context,
+                                    "Ошибка обновления профиля: ${profileTask.exception?.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                } else {
+                    isLoading = false
+                    Log.e("SignUpScreen", "Ошибка регистрации", task.exception)
+                    Toast.makeText(
+                        context,
+                        "Ошибка регистрации: ${task.exception?.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+    }
 
     val constraints = ConstraintSet {
         val backButton = createRefFor("backButton")
@@ -55,8 +113,6 @@ fun SignUpScreen(
         val passwordField = createRefFor("passwordField")
         val confirmPasswordField = createRefFor("confirmPasswordField")
         val signUpButton = createRefFor("signUpButton")
-        val divider = createRefFor("divider")
-        val socialButtons = createRefFor("socialButtons")
         val signInButton = createRefFor("signInButton")
 
         constrain(backButton) {
@@ -99,18 +155,6 @@ fun SignUpScreen(
             end.linkTo(parent.end)
         }
 
-        constrain(divider) {
-            top.linkTo(signUpButton.bottom, margin = 32.dp)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-        }
-
-        constrain(socialButtons) {
-            top.linkTo(divider.bottom, margin = 24.dp)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-        }
-
         constrain(signInButton) {
             bottom.linkTo(parent.bottom, margin = 18.dp)
             start.linkTo(parent.start)
@@ -122,133 +166,60 @@ fun SignUpScreen(
         constraintSet = constraints,
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 25.dp)
     ) {
-        IconButton(
+        BackButton(
             onClick = onBackClick,
-            modifier = Modifier
-                .layoutId("backButton")
-                .width(40.dp)
-                .height(40.dp)
-                .background(
-                    color = Color.Black,
-                    shape = RoundedCornerShape(10.dp)
-                )
-                .padding(12.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_back),
-                contentDescription = "Назад",
-                tint = Color.White,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+            modifier = Modifier.layoutId("backButton")
+        )
 
         Text(
-            text = "Регистрация",
+            text = stringResource(R.string.sign_up_title),
             fontSize = 30.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier
-                .layoutId("title")
-                .width(600.dp)
-                .height(39.dp)
+            modifier = Modifier.layoutId("title")
         )
 
-        OutlinedTextField(
+        AuthTextField(
             value = name,
             onValueChange = { name = it },
-            label = { Text("Ваше имя") },
-            singleLine = true,
-            colors = textFieldColors,
-            modifier = Modifier
-                .fillMaxWidth()
-                .layoutId("nameField")
+            label = stringResource(R.string.name_label),
+            modifier = Modifier.layoutId("nameField")
         )
 
-        OutlinedTextField(
+        AuthTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Электронная почта") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            colors = textFieldColors,
-            modifier = Modifier
-                .fillMaxWidth()
-                .layoutId("emailField")
+            label = stringResource(R.string.email_label),
+            modifier = Modifier.layoutId("emailField")
         )
 
-        OutlinedTextField(
+        AuthTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Придумайте пароль") },
-            singleLine = true,
-            visualTransformation = if (isPasswordVisible)
-                VisualTransformation.None
-            else
-                PasswordVisualTransformation(),
-            colors = textFieldColors,
-            trailingIcon = {
-                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                    Icon(
-                        painter = painterResource(
-                            if (isPasswordVisible) R.drawable.icon_visible_on
-                            else R.drawable.icon_visible_off
-                        ),
-                        contentDescription = if (isPasswordVisible) "Скрыть пароль" else "Показать пароль"
-                    )
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .layoutId("passwordField")
+            label = stringResource(R.string.password_label),
+            isPassword = true,
+            isPasswordVisible = isPasswordVisible,
+            onVisibilityChange = { isPasswordVisible = !isPasswordVisible },
+            modifier = Modifier.layoutId("passwordField")
         )
 
-        OutlinedTextField(
+        AuthTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            label = { Text("Подтвердите пароль") },
-            singleLine = true,
-            visualTransformation = if (isConfirmPasswordVisible)
-                VisualTransformation.None
-            else
-                PasswordVisualTransformation(),
-            colors = textFieldColors,
-            trailingIcon = {
-                IconButton(onClick = { isConfirmPasswordVisible = !isConfirmPasswordVisible }) {
-                    Icon(
-                        painter = painterResource(
-                            if (isConfirmPasswordVisible) R.drawable.icon_visible_on
-                            else R.drawable.icon_visible_off
-                        ),
-                        contentDescription = if (isConfirmPasswordVisible) "Скрыть пароль" else "Показать пароль"
-                    )
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .layoutId("confirmPasswordField")
+            label = stringResource(R.string.confirm_password_label),
+            isPassword = true,
+            isPasswordVisible = isPasswordVisible,
+            onVisibilityChange = { isPasswordVisible = !isPasswordVisible },
+            modifier = Modifier.layoutId("confirmPasswordField")
         )
 
-        Button(
-            onClick = {
-                if (password == confirmPassword) {
-                    onSignUpClick(name, email, password)
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .layoutId("signUpButton"),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Black
-            )
-        ) {
-            Text(
-                text = "Создать аккаунт",
-                fontSize = 16.sp
-            )
-        }
+        AuthButton(
+            text = stringResource(R.string.sign_up_button),
+            onClick = { handleSignUp(name, email, password) },
+            isLoading = isLoading,
+            modifier = Modifier.layoutId("signUpButton")
+        )
 
         Row(
             modifier = Modifier
@@ -258,35 +229,18 @@ fun SignUpScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Уже есть аккаунт? ",
+                text = stringResource(R.string.already_have_account),
                 color = Color.Gray
             )
             TextButton(
                 onClick = onSignInClick,
-                contentPadding = PaddingValues(0.dp),
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color.Black,
-                    containerColor = Color.Transparent
-                )
+                contentPadding = PaddingValues(0.dp)
             ) {
                 Text(
-                    text = "Войти",
+                    text = stringResource(R.string.sign_in_link),
                     color = Color.Black
                 )
             }
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun SignUpPreview() {
-    MaterialTheme {
-        SignUpScreen(
-            onBackClick = {},
-            onSignUpClick = { _, _, _ -> },
-            onSignInClick = {}
-        )
-    }
-}
-

@@ -1,53 +1,72 @@
 package com.example.loyalisttest.auth
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.indication
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import com.example.loyalisttest.R
+import com.example.loyalisttest.components.AuthButton
+import com.example.loyalisttest.components.AuthTextField
+import com.example.loyalisttest.components.BackButton
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 
 @Composable
 fun SignInScreen(
     onBackClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
     onSignInClick: (email: String, password: String) -> Unit,
-    onRegisterClick: () -> Unit
+    onRegisterClick: () -> Unit,
+    auth: FirebaseAuth? = Firebase.auth
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = Color.Black,
-        unfocusedBorderColor = Color.Gray,
-        focusedLabelColor = Color.Black,
-        unfocusedLabelColor = Color.Gray,
-        focusedLeadingIconColor = Color.Black,
-        unfocusedLeadingIconColor = Color.Gray,
-        focusedTrailingIconColor = Color.Black,
-        unfocusedTrailingIconColor = Color.Gray
-    )
+    val context = LocalContext.current
+
+    fun handleSignIn(email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
+            Toast.makeText(context, "Заполните все поля", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (auth == null) {
+            onSignInClick(email, password)
+            return
+        }
+
+        isLoading = true
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                isLoading = false
+                if (task.isSuccessful) {
+                    Toast.makeText(context, "Успешная авторизация", Toast.LENGTH_SHORT).show()
+                    onSignInClick(email, password)
+                } else {
+                    Toast.makeText(
+                        context,
+                        task.exception?.message ?: "Ошибка авторизации",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+    }
 
     val constraints = ConstraintSet {
         val backButton = createRefFor("backButton")
@@ -116,74 +135,35 @@ fun SignInScreen(
         constraintSet = constraints,
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 25.dp)
     ) {
-        IconButton(
+        BackButton(
             onClick = onBackClick,
-            modifier = Modifier
-                .layoutId("backButton")
-                .width(40.dp)
-                .height(40.dp)
-                .background(
-                    color = Color.Black,
-                    shape = RoundedCornerShape(10.dp)
-                )
-                .padding(12.dp)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_back),
-                contentDescription = "Назад",
-                tint = Color.White,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+            modifier = Modifier.layoutId("backButton")
+        )
 
         Text(
-            text = "Авторизация",
+            text = stringResource(R.string.sign_in_title),
             fontSize = 30.sp,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier
-                .layoutId("title")
-                .width(600.dp)
-                .height(39.dp)
+            modifier = Modifier.layoutId("title")
         )
 
-        OutlinedTextField(
+        AuthTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Электронная почта") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            colors = textFieldColors,
-            modifier = Modifier
-                .fillMaxWidth()
-                .layoutId("emailField")
+            label = stringResource(R.string.email_label),
+            modifier = Modifier.layoutId("emailField")
         )
 
-        OutlinedTextField(
+        AuthTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Пароль") },
-            singleLine = true,
-            visualTransformation = if (isPasswordVisible)
-                VisualTransformation.None
-            else
-                PasswordVisualTransformation(),
-            colors = textFieldColors,
-            trailingIcon = {
-                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                    Icon(
-                        painter = painterResource(
-                            if (isPasswordVisible) R.drawable.icon_visible_on
-                            else R.drawable.icon_visible_off
-                        ),
-                        contentDescription = if (isPasswordVisible) "Скрыть пароль" else "Показать пароль"
-                    )
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .layoutId("passwordField")
+            label = stringResource(R.string.password_label),
+            isPassword = true,
+            isPasswordVisible = isPasswordVisible,
+            onVisibilityChange = { isPasswordVisible = !isPasswordVisible },
+            modifier = Modifier.layoutId("passwordField")
         )
 
         TextButton(
@@ -191,27 +171,17 @@ fun SignInScreen(
             modifier = Modifier.layoutId("forgotPassword")
         ) {
             Text(
-                text = "Забыли пароль?",
+                text = stringResource(R.string.forgot_password),
                 color = Color.Black
             )
         }
 
-        Button(
-            onClick = { onSignInClick(email, password) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .layoutId("signInButton"),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Black
-            )
-        ) {
-            Text(
-                text = "Войти",
-                fontSize = 16.sp
-            )
-        }
+        AuthButton(
+            text = stringResource(R.string.sign_in_button),
+            onClick = { handleSignIn(email, password) },
+            isLoading = isLoading,
+            modifier = Modifier.layoutId("signInButton")
+        )
 
         Row(
             modifier = Modifier.layoutId("divider"),
@@ -222,7 +192,7 @@ fun SignInScreen(
                     .weight(1f)
                     .padding(end = 16.dp)
             )
-            Text(text = "или")
+            Text(text = stringResource(R.string.or))
             HorizontalDivider(
                 modifier = Modifier
                     .weight(1f)
@@ -237,38 +207,41 @@ fun SignInScreen(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             OutlinedButton(
-                onClick = { /* Handle Facebook login */ },
+                onClick = { },
                 modifier = Modifier.size(width = 100.dp, height = 48.dp),
-                shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, Color.Gray)
+                shape = MaterialTheme.shapes.medium,
+                border = ButtonDefaults.outlinedButtonBorder
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.facebook),
-                    contentDescription = "Facebook"
+                    contentDescription = "Facebook",
+                    tint = Color.Unspecified,
                 )
             }
 
             OutlinedButton(
-                onClick = { /* Handle Google login */ },
+                onClick = { },
                 modifier = Modifier.size(width = 100.dp, height = 48.dp),
-                shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, Color.Gray)
+                shape = MaterialTheme.shapes.medium,
+                border = ButtonDefaults.outlinedButtonBorder
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.google),
-                    contentDescription = "Google"
+                    contentDescription = "Google",
+                    tint = Color.Unspecified,
                 )
             }
 
             OutlinedButton(
-                onClick = { /* Handle Apple login */ },
+                onClick = { },
                 modifier = Modifier.size(width = 100.dp, height = 48.dp),
-                shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, Color.Gray)
+                shape = MaterialTheme.shapes.medium,
+                border = ButtonDefaults.outlinedButtonBorder
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.apple),
-                    contentDescription = "Apple"
+                    contentDescription = "Apple",
+                    tint = Color.Unspecified,
                 )
             }
         }
@@ -281,37 +254,18 @@ fun SignInScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Нет аккаунта? ",
+                text = stringResource(R.string.dont_have_account),
                 color = Color.Gray
             )
             TextButton(
                 onClick = onRegisterClick,
-                contentPadding = PaddingValues(0.dp),
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color.Black,
-                    containerColor = Color.Transparent
-                ),
-                interactionSource = remember { MutableInteractionSource() }
+                contentPadding = PaddingValues(0.dp)
             ) {
                 Text(
-                    text = "Зарегистрироваться",
+                    text = stringResource(R.string.sign_up_link),
                     color = Color.Black
                 )
             }
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun SignInScreenPreview() {
-    MaterialTheme {
-        SignInScreen(
-            onBackClick = {},
-            onForgotPasswordClick = {},
-            onSignInClick = { _, _ -> },
-            onRegisterClick = {}
-        )
-    }
-}
-

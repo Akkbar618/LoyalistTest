@@ -1,4 +1,4 @@
-//package com.example.loyalisttest.auth
+package com.example.loyalisttest.other//package com.example.loyalisttest.auth
 //
 //import android.util.Log
 //import androidx.compose.foundation.layout.Arrangement

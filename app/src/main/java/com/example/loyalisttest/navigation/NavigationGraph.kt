@@ -5,6 +5,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.loyalisttest.auth.*
+import com.example.loyalisttest.navigation.NavigationActions.navigateToForgotPassword
+import com.example.loyalisttest.navigation.NavigationActions.navigateToSignIn
+import com.example.loyalisttest.navigation.NavigationActions.navigateToSignUp
 
 @Composable
 fun SetupNavGraph(navController: NavHostController) {
@@ -15,10 +18,10 @@ fun SetupNavGraph(navController: NavHostController) {
         composable(route = NavigationRoutes.Welcome.route) {
             WelcomeScreen(
                 onNavigateToSignIn = {
-                    navController.navigate(NavigationRoutes.SignIn.route)
+                    navController.navigateToSignIn()
                 },
                 onNavigateToSignUp = {
-                    navController.navigate(NavigationRoutes.SignUp.route)
+                    navController.navigateToSignUp()
                 }
             )
         }
@@ -29,17 +32,13 @@ fun SetupNavGraph(navController: NavHostController) {
                     navController.navigateUp()
                 },
                 onForgotPasswordClick = {
-                    navController.navigate(NavigationRoutes.ForgotPassword.route)
+                    navController.navigateToForgotPassword()
                 },
                 onSignInClick = { email, password ->
                     // Будет реализовано позже
                 },
                 onRegisterClick = {
-                    navController.navigate(NavigationRoutes.SignUp.route) {
-                        popUpTo(NavigationRoutes.SignIn.route) {
-                            inclusive = true
-                        }
-                    }
+                    navController.navigateToSignUp(NavigationRoutes.SignIn.route)
                 }
             )
         }
@@ -53,29 +52,20 @@ fun SetupNavGraph(navController: NavHostController) {
                     // Будет реализовано позже
                 },
                 onSignInClick = {
-                    navController.navigate(NavigationRoutes.SignIn.route) {
-                        popUpTo(NavigationRoutes.SignUp.route) {
-                            inclusive = true
-                        }
-                    }
+                    navController.navigateToSignIn(NavigationRoutes.SignUp.route)
                 }
             )
         }
 
         composable(route = NavigationRoutes.ForgotPassword.route) {
-            // Будет реализовано позже
-        }
-
-        composable(route = NavigationRoutes.ResetPassword.route) {
-            // Будет реализовано позже
-        }
-
-        composable(route = NavigationRoutes.PasswordChanged.route) {
-            // Будет реализовано позже
-        }
-
-        composable(route = NavigationRoutes.VerificationCode.route) {
-            // Будет реализовано позже
+            ForgotPasswordScreen(
+                onBackClick = {
+                    navController.navigateUp()
+                },
+                onSignInClick = {
+                    navController.navigateToSignIn(NavigationRoutes.Welcome.route)
+                }
+            )
         }
     }
 }
