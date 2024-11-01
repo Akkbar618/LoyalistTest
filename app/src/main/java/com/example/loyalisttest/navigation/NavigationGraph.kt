@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.loyalisttest.auth.*
+import com.example.loyalisttest.main.MainScreen
 import com.example.loyalisttest.navigation.NavigationActions.navigateToForgotPassword
 import com.example.loyalisttest.navigation.NavigationActions.navigateToSignIn
 import com.example.loyalisttest.navigation.NavigationActions.navigateToSignUp
@@ -34,8 +35,10 @@ fun SetupNavGraph(navController: NavHostController) {
                 onForgotPasswordClick = {
                     navController.navigateToForgotPassword()
                 },
-                onSignInClick = { email, password ->
-                    // Будет реализовано позже
+                onSignInClick = { _, _ ->
+                    navController.navigate(NavigationRoutes.Main.route) {
+                        popUpTo(NavigationRoutes.Welcome.route) { inclusive = true }
+                    }
                 },
                 onRegisterClick = {
                     navController.navigateToSignUp(NavigationRoutes.SignIn.route)
@@ -48,8 +51,10 @@ fun SetupNavGraph(navController: NavHostController) {
                 onBackClick = {
                     navController.navigateUp()
                 },
-                onSignUpClick = { name, email, password ->
-                    // Будет реализовано позже
+                onSignUpClick = { _, _, _ ->
+                    navController.navigate(NavigationRoutes.Main.route) {
+                        popUpTo(NavigationRoutes.Welcome.route) { inclusive = true }
+                    }
                 },
                 onSignInClick = {
                     navController.navigateToSignIn(NavigationRoutes.SignUp.route)
@@ -66,6 +71,10 @@ fun SetupNavGraph(navController: NavHostController) {
                     navController.navigateToSignIn(NavigationRoutes.Welcome.route)
                 }
             )
+        }
+
+        composable(route = NavigationRoutes.Main.route) {
+            MainScreen(navController)
         }
     }
 }

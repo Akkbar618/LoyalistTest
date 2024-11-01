@@ -56,3 +56,14 @@ fun LoyalistTestTheme(
         content = content
     )
 }
+
+@Composable
+fun LoyalistTheme(
+    content: @Composable () -> Unit
+) {
+    MaterialTheme(
+        colorScheme = MaterialTheme.colorScheme,
+        typography = Typography,
+        content = content
+    )
+}
