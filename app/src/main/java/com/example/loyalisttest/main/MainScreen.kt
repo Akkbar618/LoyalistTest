@@ -4,20 +4,37 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.example.loyalisttest.main.screens.*
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavHostController) {
     val mainNavController = rememberNavController()
 
-    // Получаем текущий route
+    // Слушатель состояния авторизации
+    DisposableEffect(Unit) {
+        val authStateListener = FirebaseAuth.AuthStateListener { auth ->
+            if (auth.currentUser == null) {
+                // Если пользователь вышел из аккаунта, возвращаемся на экран приветствия
+                navController.navigate(NavigationRoutes.Welcome.route) {
+                    popUpTo(NavigationRoutes.Main.route) { inclusive = true }
+                }
+            }
+        }
+
+        FirebaseAuth.getInstance().addAuthStateListener(authStateListener)
+
+        onDispose {
+            FirebaseAuth.getInstance().removeAuthStateListener(authStateListener)
+        }
+    }
+
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 

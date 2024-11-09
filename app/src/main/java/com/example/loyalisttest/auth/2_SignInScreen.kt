@@ -1,5 +1,6 @@
 package com.example.loyalisttest.auth
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -24,6 +25,7 @@ import com.example.loyalisttest.components.BackButton
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun SignInScreen(
@@ -39,6 +41,39 @@ fun SignInScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val firestore = FirebaseFirestore.getInstance()
+
+    fun checkAndCreateUserProfile(userId: String, email: String) {
+        firestore.collection("users")
+            .document(userId)
+            .get()
+            .addOnSuccessListener { document ->
+                if (!document.exists()) {
+                    // Создаем профиль, если его нет
+                    val userProfile = hashMapOf(
+                        "userId" to userId,
+                        "email" to email,
+                        "name" to (auth?.currentUser?.displayName ?: email.substringBefore("@")),
+                        "registrationDate" to System.currentTimeMillis(),
+                        "totalPoints" to 0,
+                        "visitCount" to 0
+                    )
+
+                    firestore.collection("users")
+                        .document(userId)
+                        .set(userProfile)
+                        .addOnSuccessListener {
+                            Log.d("SignInScreen", "Профиль пользователя создан")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("SignInScreen", "Ошибка создания профиля", e)
+                        }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("SignInScreen", "Ошибка проверки профиля", e)
+            }
+    }
 
     fun handleSignIn(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
@@ -52,13 +87,62 @@ fun SignInScreen(
         }
 
         isLoading = true
+        Log.d("SignInScreen", "Attempting to sign in with email: $email")
+
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-                isLoading = false
+                Log.d("SignInScreen", "Sign in task completed. Success: ${task.isSuccessful}")
+
                 if (task.isSuccessful) {
-                    Toast.makeText(context, "Успешная авторизация", Toast.LENGTH_SHORT).show()
-                    onSignInClick(email, password)
+                    // Проверяем и создаем профиль пользователя если необходимо
+                    auth.currentUser?.uid?.let { userId ->
+                        firestore.collection("users")
+                            .document(userId)
+                            .get()
+                            .addOnSuccessListener { document ->
+                                if (!document.exists()) {
+                                    // Создаем профиль, если его нет
+                                    val userProfile = hashMapOf(
+                                        "userId" to userId,
+                                        "email" to email,
+                                        "name" to (auth.currentUser?.displayName ?: email.substringBefore("@")),
+                                        "role" to "USER",
+                                        "registrationDate" to System.currentTimeMillis(),
+                                        "totalPoints" to 0,
+                                        "visitCount" to 0
+                                    )
+
+                                    firestore.collection("users")
+                                        .document(userId)
+                                        .set(userProfile)
+                                        .addOnSuccessListener {
+                                            Log.d("SignInScreen", "Профиль пользователя создан")
+                                            isLoading = false
+                                            Toast.makeText(context, "Успешная авторизация", Toast.LENGTH_SHORT).show()
+                                            onSignInClick(email, password)
+                                        }
+                                        .addOnFailureListener { e ->
+                                            Log.e("SignInScreen", "Ошибка создания профиля", e)
+                                            isLoading = false
+                                            Toast.makeText(context, "Ошибка создания профиля: ${e.message}", Toast.LENGTH_LONG).show()
+                                        }
+                                } else {
+                                    // Профиль существует, можно продолжать
+                                    Log.d("SignInScreen", "Профиль пользователя существует")
+                                    isLoading = false
+                                    Toast.makeText(context, "Успешная авторизация", Toast.LENGTH_SHORT).show()
+                                    onSignInClick(email, password)
+                                }
+                            }
+                            .addOnFailureListener { e ->
+                                Log.e("SignInScreen", "Ошибка проверки профиля", e)
+                                isLoading = false
+                                Toast.makeText(context, "Ошибка проверки профиля: ${e.message}", Toast.LENGTH_LONG).show()
+                            }
+                    }
                 } else {
+                    Log.e("SignInScreen", "Sign in failed", task.exception)
+                    isLoading = false
                     Toast.makeText(
                         context,
                         task.exception?.message ?: "Ошибка авторизации",

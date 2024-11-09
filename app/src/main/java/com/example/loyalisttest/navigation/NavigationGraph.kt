@@ -11,10 +11,13 @@ import com.example.loyalisttest.navigation.NavigationActions.navigateToSignIn
 import com.example.loyalisttest.navigation.NavigationActions.navigateToSignUp
 
 @Composable
-fun SetupNavGraph(navController: NavHostController) {
+fun SetupNavGraph(
+    navController: NavHostController,
+    startDestination: String = NavigationRoutes.Welcome.route
+) {
     NavHost(
         navController = navController,
-        startDestination = NavigationRoutes.Welcome.route
+        startDestination = startDestination
     ) {
         composable(route = NavigationRoutes.Welcome.route) {
             WelcomeScreen(
@@ -74,7 +77,7 @@ fun SetupNavGraph(navController: NavHostController) {
         }
 
         composable(route = NavigationRoutes.Main.route) {
-            MainScreen(navController)
+            MainScreen(navController = navController)
         }
     }
 }

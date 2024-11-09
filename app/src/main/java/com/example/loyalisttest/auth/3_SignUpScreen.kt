@@ -24,6 +24,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun SignUpScreen(
@@ -40,6 +41,7 @@ fun SignUpScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val firestore = FirebaseFirestore.getInstance()
 
     fun validateInput(): Boolean {
         if (name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
@@ -57,6 +59,32 @@ fun SignUpScreen(
         return true
     }
 
+    fun createUserProfile(userId: String, name: String, email: String) {
+        val userProfile = hashMapOf(
+            "userId" to userId,
+            "name" to name,
+            "email" to email,
+            "registrationDate" to System.currentTimeMillis(),
+            "totalPoints" to 0,
+            "visitCount" to 0
+        )
+
+        firestore.collection("users")
+            .document(userId)
+            .set(userProfile)
+            .addOnSuccessListener {
+                Log.d("SignUpScreen", "Профиль пользователя создан")
+            }
+            .addOnFailureListener { e ->
+                Log.e("SignUpScreen", "Ошибка создания профиля", e)
+                Toast.makeText(
+                    context,
+                    "Ошибка создания профиля: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+    }
+
     fun handleSignUp(name: String, email: String, password: String) {
         if (!validateInput()) return
 
@@ -69,14 +97,20 @@ fun SignUpScreen(
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    val user = auth.currentUser
                     val profileUpdates = UserProfileChangeRequest.Builder()
                         .setDisplayName(name)
                         .build()
 
-                    auth.currentUser?.updateProfile(profileUpdates)
+                    user?.updateProfile(profileUpdates)
                         ?.addOnCompleteListener { profileTask ->
-                            isLoading = false
                             if (profileTask.isSuccessful) {
+                                // Создаем профиль пользователя в Firestore
+                                user.uid.let { userId ->
+                                    createUserProfile(userId, name, email)
+                                }
+
+                                isLoading = false
                                 Log.d("SignUpScreen", "Регистрация успешна")
                                 Toast.makeText(
                                     context,
@@ -85,6 +119,7 @@ fun SignUpScreen(
                                 ).show()
                                 onSignUpClick(name, email, password)
                             } else {
+                                isLoading = false
                                 Log.e("SignUpScreen", "Ошибка обновления профиля", profileTask.exception)
                                 Toast.makeText(
                                     context,
