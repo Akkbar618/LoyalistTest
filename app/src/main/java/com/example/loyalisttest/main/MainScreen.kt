@@ -10,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.example.loyalisttest.main.screens.*
+import com.example.loyalisttest.ui.theme.Transitions
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -17,11 +18,9 @@ import com.google.firebase.auth.FirebaseAuth
 fun MainScreen(navController: NavHostController) {
     val mainNavController = rememberNavController()
 
-    // Слушатель состояния авторизации
     DisposableEffect(Unit) {
         val authStateListener = FirebaseAuth.AuthStateListener { auth ->
             if (auth.currentUser == null) {
-                // Если пользователь вышел из аккаунта, возвращаемся на экран приветствия
                 navController.navigate(NavigationRoutes.Welcome.route) {
                     popUpTo(NavigationRoutes.Main.route) { inclusive = true }
                 }
@@ -71,16 +70,35 @@ fun MainScreen(navController: NavHostController) {
             startDestination = NavigationRoutes.Home.route,
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable(NavigationRoutes.Home.route) {
+            composable(
+                route = NavigationRoutes.Home.route,
+                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
+                exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
+            ) {
                 HomeScreen(mainNavController)
             }
-            composable(NavigationRoutes.Catalog.route) {
+
+            composable(
+                route = NavigationRoutes.Catalog.route,
+                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
+                exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
+            ) {
                 CatalogScreen()
             }
-            composable(NavigationRoutes.Settings.route) {
+
+            composable(
+                route = NavigationRoutes.Settings.route,
+                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
+                exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
+            ) {
                 SettingsScreen()
             }
-            composable(NavigationRoutes.QrCodeFullscreen.route) {
+
+            composable(
+                route = NavigationRoutes.QrCodeFullscreen.route,
+                enterTransition = { Transitions.enterScale() },
+                exitTransition = { Transitions.exitScale() }
+            ) {
                 QrCodeFullscreenScreen(mainNavController)
             }
         }
