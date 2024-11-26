@@ -65,5 +65,14 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.core)
+    implementation(libs.accompanist.permissions)
+    implementation(libs.zxing.android.embedded)
+    implementation(libs.play.services.auth)
+
+    // Firebase BOM уже добавлен, просто убедитесь что есть все нужные сервисы
+
+
+    implementation(libs.firebase.firestore.ktx)
+
 
 }

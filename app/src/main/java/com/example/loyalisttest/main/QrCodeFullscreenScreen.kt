@@ -1,48 +1,60 @@
-package com.example.loyalisttest.main.screens
+package com.example.loyalisttest.main
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.loyalisttest.R  // Добавь этот импорт
+import androidx.navigation.NavHostController
+import com.example.loyalisttest.utils.QrCodeGenerator
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun QrCodeFullscreenScreen(navController: NavHostController) {
+    val currentUser = remember { FirebaseAuth.getInstance().currentUser }
+    val userId = currentUser?.uid ?: ""
+    var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(userId) {
+        if (userId.isNotBlank()) {
+            try {
+                qrCodeBitmap = QrCodeGenerator.generateQrCode(userId, 512, 512)
+            } finally {
+                isLoading = false
+            }
+        } else {
+            isLoading = false
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(Color.Black)
+            .clickable { navController.popBackStack() },
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.qr_code),
-            contentDescription = "QR код",
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp)
-        )
-
-        IconButton(
-            onClick = { navController.navigateUp() },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Закрыть",
-                tint = Color.Black
+        if (isLoading) {
+            CircularProgressIndicator(color = Color.White)
+        } else if (qrCodeBitmap != null) {
+            Image(
+                bitmap = qrCodeBitmap!!.asImageBitmap(),
+                contentDescription = "QR Code Fullscreen",
+                modifier = Modifier
+                    .size(300.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.White)
             )
         }
     }

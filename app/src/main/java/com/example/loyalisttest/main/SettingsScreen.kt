@@ -1,4 +1,4 @@
-package com.example.loyalisttest.main.screens
+package com.example.loyalisttest.main
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons

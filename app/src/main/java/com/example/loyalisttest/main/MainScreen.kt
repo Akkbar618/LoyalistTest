@@ -7,9 +7,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.example.loyalisttest.navigation.NavigationRoutes
-import com.example.loyalisttest.main.screens.*
 import com.example.loyalisttest.ui.theme.Transitions
 import com.google.firebase.auth.FirebaseAuth
 
@@ -72,7 +73,12 @@ fun MainScreen(navController: NavHostController) {
         ) {
             composable(
                 route = NavigationRoutes.Home.route,
-                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
+                enterTransition = {
+                    Transitions.bottomNavEnterTransition(
+                        initialState,
+                        targetState
+                    )
+                },
                 exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
             ) {
                 HomeScreen(mainNavController)
@@ -80,15 +86,25 @@ fun MainScreen(navController: NavHostController) {
 
             composable(
                 route = NavigationRoutes.Catalog.route,
-                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
+                enterTransition = {
+                    Transitions.bottomNavEnterTransition(
+                        initialState,
+                        targetState
+                    )
+                },
                 exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
             ) {
-                CatalogScreen()
+                CatalogScreen(mainNavController)
             }
 
             composable(
                 route = NavigationRoutes.Settings.route,
-                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
+                enterTransition = {
+                    Transitions.bottomNavEnterTransition(
+                        initialState,
+                        targetState
+                    )
+                },
                 exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
             ) {
                 SettingsScreen()
@@ -100,6 +116,34 @@ fun MainScreen(navController: NavHostController) {
                 exitTransition = { Transitions.exitScale() }
             ) {
                 QrCodeFullscreenScreen(mainNavController)
+            }
+
+            // Добавляем маршрут для добавления товара
+            composable(
+                route = NavigationRoutes.AddProduct.route,
+                enterTransition = { Transitions.enterScale() },
+                exitTransition = { Transitions.exitScale() }
+            ) {
+                AddProductScreen(mainNavController)
+            }
+
+            // Добавляем новый маршрут для сканера QR-кода
+            composable(
+                route = NavigationRoutes.QrScanner.route,
+                arguments = listOf(
+                    navArgument("productId") {
+                        type = NavType.StringType
+                    }
+                ),
+                enterTransition = { Transitions.enterScale() },
+                exitTransition = { Transitions.exitScale() }
+            ) { backStackEntry ->
+                val productId = backStackEntry.arguments?.getString("productId")
+                    ?: return@composable
+                QrScannerScreen(
+                    navController = mainNavController,
+                    productId = productId
+                )
             }
         }
     }

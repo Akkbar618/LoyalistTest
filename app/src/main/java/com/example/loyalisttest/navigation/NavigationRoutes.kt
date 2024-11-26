@@ -10,6 +10,10 @@ sealed class NavigationRoutes(val route: String) {
     data object Catalog : NavigationRoutes("main/catalog")
     data object Settings : NavigationRoutes("main/settings")
     data object QrCodeFullscreen : NavigationRoutes("main/home/qr_fullscreen")
+    data object AddProduct : NavigationRoutes("main/catalog/add_product")
+    data object QrScanner : NavigationRoutes("main/catalog/qr_scanner/{productId}") {
+        fun createRoute(productId: String) = "main/catalog/qr_scanner/$productId"
+    }
 
     companion object {
         fun fromRoute(route: String?): NavigationRoutes {
@@ -23,7 +27,13 @@ sealed class NavigationRoutes(val route: String) {
                 Catalog.route -> Catalog
                 Settings.route -> Settings
                 QrCodeFullscreen.route -> QrCodeFullscreen
-                else -> Welcome
+                AddProduct.route -> AddProduct
+                else -> {
+                    when {
+                        route?.startsWith("main/catalog/qr_scanner/") == true -> QrScanner
+                        else -> Welcome
+                    }
+                }
             }
         }
     }
