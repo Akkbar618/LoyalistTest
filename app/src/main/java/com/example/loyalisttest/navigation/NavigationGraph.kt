@@ -6,7 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.loyalisttest.auth.*
-import com.example.loyalisttest.main.MainScreen
+import com.example.loyalisttest.main.*
 import com.example.loyalisttest.navigation.NavigationActions.navigateToForgotPassword
 import com.example.loyalisttest.navigation.NavigationActions.navigateToSignIn
 import com.example.loyalisttest.navigation.NavigationActions.navigateToSignUp
@@ -82,6 +82,45 @@ fun SetupNavGraph(
             exitTransition = { Transitions.authExitTransition() }
         ) {
             MainScreen(navController = navController)
+        }
+
+        // Новые маршруты для админа
+        composable(
+            route = NavigationRoutes.AdminQrScanner.route,
+            enterTransition = { Transitions.enterScale() },
+            exitTransition = { Transitions.exitScale() }
+        ) {
+            AdminQrScannerScreen(navController = navController)
+        }
+
+        composable(
+            route = NavigationRoutes.AdminPointsHistory.route,
+            enterTransition = { Transitions.enterScale() },
+            exitTransition = { Transitions.exitScale() }
+        ) {
+            // Здесь будет экран истории начисления баллов
+            // PointsHistoryScreen(navController = navController)
+        }
+
+        // Существующие маршруты остаются без изменений
+        composable(
+            route = NavigationRoutes.QrCodeFullscreen.route,
+            enterTransition = { Transitions.enterScale() },
+            exitTransition = { Transitions.exitScale() }
+        ) {
+            QrCodeFullscreenScreen(navController = navController)
+        }
+
+        composable(
+            route = NavigationRoutes.QrScanner.route,
+            enterTransition = { Transitions.enterScale() },
+            exitTransition = { Transitions.exitScale() }
+        ) { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId")
+            QrScannerScreen(
+                navController = navController,
+                productId = productId ?: ""
+            )
         }
     }
 }

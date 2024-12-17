@@ -26,6 +26,7 @@ import androidx.navigation.NavHostController
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.example.loyalisttest.utils.QrCodeGenerator
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 data class Promotion(
     val id: String,
@@ -49,9 +50,40 @@ fun HomeScreen(navController: NavHostController) {
     val currentUser = remember { FirebaseAuth.getInstance().currentUser }
     val userName = remember { currentUser?.displayName ?: "Пользователь" }
     val userId = currentUser?.uid ?: ""
+    val firestore = FirebaseFirestore.getInstance()
 
     var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var userPoints by remember { mutableStateOf(0) }
+    var isPointsLoading by remember { mutableStateOf(true) }
+
+    // Загрузка QR-кода
+    LaunchedEffect(userId) {
+        if (userId.isNotBlank()) {
+            try {
+                qrCodeBitmap = QrCodeGenerator.generateQrCode(userId, 256, 256)
+            } finally {
+                isLoading = false
+            }
+        } else {
+            isLoading = false
+        }
+    }
+
+    // Получение баллов пользователя в реальном времени
+    LaunchedEffect(userId) {
+        if (userId.isNotBlank()) {
+            val listener = firestore.collection("users")
+                .document(userId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        return@addSnapshotListener
+                    }
+                    userPoints = snapshot?.getLong("points")?.toInt() ?: 0
+                    isPointsLoading = false
+                }
+        }
+    }
 
     // Пример данных для промо и рекомендаций
     val promotions = remember {
@@ -66,18 +98,6 @@ fun HomeScreen(navController: NavHostController) {
             Recommendation("1", "БабаГриль", "ул. Ленинская, 28", "url_to_image", 4.8f),
             Recommendation("2", "DonerDon", "ул. Дубова, 13", "url_to_image", 4.7f)
         )
-    }
-
-    LaunchedEffect(userId) {
-        if (userId.isNotBlank()) {
-            try {
-                qrCodeBitmap = QrCodeGenerator.generateQrCode(userId, 256, 256)
-            } finally {
-                isLoading = false
-            }
-        } else {
-            isLoading = false
-        }
     }
 
     Column(
@@ -102,7 +122,6 @@ fun HomeScreen(navController: NavHostController) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Start
                 ) {
-                    // Здесь можно добавить аватар пользователя если нужно
                     Text(
                         text = "С возвращением,\n$userName!",
                         color = Color.White,
@@ -120,6 +139,7 @@ fun HomeScreen(navController: NavHostController) {
             }
         }
 
+        // QR-код пользователя
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -160,7 +180,6 @@ fun HomeScreen(navController: NavHostController) {
                                 contentDescription = "QR Code",
                                 modifier = Modifier.fillMaxSize()
                             )
-                            // Кнопка полноэкранного режима
                             IconButton(
                                 onClick = {
                                     navController.navigate(NavigationRoutes.QrCodeFullscreen.route) {
@@ -172,13 +191,43 @@ fun HomeScreen(navController: NavHostController) {
                                     .padding(8.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Clear, // Изменили иконку
+                                    imageVector = Icons.Default.Clear,
                                     contentDescription = "Развернуть",
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
                     }
+                }
+            }
+        }
+
+        // Карточка с баллами
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Ваши баллы",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (isPointsLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else {
+                    Text(
+                        text = userPoints.toString(),
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -247,7 +296,6 @@ fun PromotionCard(promotion: Promotion) {
         shape = RoundedCornerShape(12.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Здесь должно быть изображение промо
             Text(
                 text = promotion.title,
                 color = Color.White,
@@ -276,7 +324,6 @@ fun RecommendationCard(recommendation: Recommendation) {
         shape = RoundedCornerShape(12.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Здесь должно быть изображение заведения
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)

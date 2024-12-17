@@ -73,12 +73,7 @@ fun MainScreen(navController: NavHostController) {
         ) {
             composable(
                 route = NavigationRoutes.Home.route,
-                enterTransition = {
-                    Transitions.bottomNavEnterTransition(
-                        initialState,
-                        targetState
-                    )
-                },
+                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
                 exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
             ) {
                 HomeScreen(mainNavController)
@@ -86,12 +81,7 @@ fun MainScreen(navController: NavHostController) {
 
             composable(
                 route = NavigationRoutes.Catalog.route,
-                enterTransition = {
-                    Transitions.bottomNavEnterTransition(
-                        initialState,
-                        targetState
-                    )
-                },
+                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
                 exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
             ) {
                 CatalogScreen(mainNavController)
@@ -99,12 +89,7 @@ fun MainScreen(navController: NavHostController) {
 
             composable(
                 route = NavigationRoutes.Settings.route,
-                enterTransition = {
-                    Transitions.bottomNavEnterTransition(
-                        initialState,
-                        targetState
-                    )
-                },
+                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
                 exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
             ) {
                 SettingsScreen()
@@ -118,22 +103,19 @@ fun MainScreen(navController: NavHostController) {
                 QrCodeFullscreenScreen(mainNavController)
             }
 
-            // Добавляем маршрут для добавления товара
+            // Добавляем новый маршрут для админского сканера QR-кода
             composable(
-                route = NavigationRoutes.AddProduct.route,
+                route = NavigationRoutes.AdminQrScanner.route,
                 enterTransition = { Transitions.enterScale() },
                 exitTransition = { Transitions.exitScale() }
             ) {
-                AddProductScreen(mainNavController)
+                AdminQrScannerScreen(mainNavController)
             }
 
-            // Добавляем новый маршрут для сканера QR-кода
             composable(
                 route = NavigationRoutes.QrScanner.route,
                 arguments = listOf(
-                    navArgument("productId") {
-                        type = NavType.StringType
-                    }
+                    navArgument("productId") { type = NavType.StringType }
                 ),
                 enterTransition = { Transitions.enterScale() },
                 exitTransition = { Transitions.exitScale() }

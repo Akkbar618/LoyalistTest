@@ -14,6 +14,9 @@ sealed class NavigationRoutes(val route: String) {
     data object QrScanner : NavigationRoutes("main/catalog/qr_scanner/{productId}") {
         fun createRoute(productId: String) = "main/catalog/qr_scanner/$productId"
     }
+    // Новые маршруты для админа
+    data object AdminQrScanner : NavigationRoutes("main/admin/qr_scanner")
+    data object AdminPointsHistory : NavigationRoutes("main/admin/points_history")
 
     companion object {
         fun fromRoute(route: String?): NavigationRoutes {
@@ -28,6 +31,8 @@ sealed class NavigationRoutes(val route: String) {
                 Settings.route -> Settings
                 QrCodeFullscreen.route -> QrCodeFullscreen
                 AddProduct.route -> AddProduct
+                AdminQrScanner.route -> AdminQrScanner
+                AdminPointsHistory.route -> AdminPointsHistory
                 else -> {
                     when {
                         route?.startsWith("main/catalog/qr_scanner/") == true -> QrScanner
