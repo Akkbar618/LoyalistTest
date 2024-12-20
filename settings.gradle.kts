@@ -1,6 +1,6 @@
 pluginManagement {
     repositories {
-        google()  // Упростим настройки Google репозитория
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
@@ -11,7 +11,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://jitpack.io") } // Добавим для zxing
+        maven { url = uri("https://jitpack.io") }
     }
 }
 

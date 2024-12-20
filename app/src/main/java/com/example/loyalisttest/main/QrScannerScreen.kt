@@ -19,6 +19,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import com.example.loyalisttest.models.*
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -26,24 +27,15 @@ fun QrScannerScreen(
     navController: NavHostController,
     productId: String
 ) {
-    val context = LocalContext.current
-    val currentUser = remember { FirebaseAuth.getInstance().currentUser }
-        ?: run {
-            LaunchedEffect(Unit) {
-                navController.popBackStack()
-            }
-            return
-        }
-
     var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var success by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var product by remember { mutableStateOf<Product?>(null) }
 
-    // Запрашиваем разрешение на использование камеры
-    val cameraPermissionState = rememberPermissionState(
-        Manifest.permission.CAMERA
-    )
+    val context = LocalContext.current
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val firestore = FirebaseFirestore.getInstance()
 
+    // Обработчик результата сканирования
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         if (result.contents == null) {
             navController.popBackStack()
@@ -51,104 +43,156 @@ fun QrScannerScreen(
         }
 
         isLoading = true
-        error = null
+        errorMessage = null
+        val scannedUserId = result.contents
 
-        val db = FirebaseFirestore.getInstance()
-        db.collection("products").document(productId)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val expectedQrCode = document.getString("qrCode")
-                    val points = document.getLong("points")?.toInt() ?: 0
+        currentUser?.let { admin ->
+            firestore.collection("users").document(admin.uid)
+                .get()
+                .addOnSuccessListener { adminDoc ->
+                    if (adminDoc.getString("role") == "ADMIN") {
+                        product?.let { p ->
+                            val userPointsRef = firestore.collection("userPoints")
+                                .document("${scannedUserId}_${p.cafeId}")
 
-                    if (expectedQrCode == result.contents) {
-                        val userRef = db.collection("users").document(currentUser.uid)
-                        db.runTransaction { transaction ->
-                            val userSnapshot = transaction.get(userRef)
-                            val currentPoints = userSnapshot.getLong("points")?.toInt() ?: 0
-                            transaction.update(userRef, "points", currentPoints + points)
-                        }.addOnSuccessListener {
-                            success = true
-                            isLoading = false
-                            Toast.makeText(
-                                context,
-                                "Начислено $points баллов!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.popBackStack()
-                        }.addOnFailureListener {
-                            error = "Ошибка при начислении баллов"
-                            isLoading = false
+                            userPointsRef.get().addOnSuccessListener { pointsDoc ->
+                                val currentPoints = pointsDoc.getLong("currentPoints")?.toInt() ?: 0
+                                val totalEarned = pointsDoc.getLong("totalEarnedPoints")?.toInt() ?: 0
+
+                                firestore.runTransaction { transaction ->
+                                    // Обновляем или создаем документ с баллами
+                                    val pointsData = hashMapOf(
+                                        "userId" to scannedUserId,
+                                        "cafeId" to p.cafeId,
+                                        "currentPoints" to (currentPoints + p.points),
+                                        "totalEarnedPoints" to (totalEarned + p.points),
+                                        "lastUpdated" to System.currentTimeMillis()
+                                    )
+
+                                    if (pointsDoc.exists()) {
+                                        transaction.update(userPointsRef,
+                                            pointsData as Map<String, Any>
+                                        )
+                                    } else {
+                                        transaction.set(userPointsRef, pointsData)
+                                    }
+
+                                    // Создаем запись в истории
+                                    val historyRef = firestore.collection("pointsHistory").document()
+                                    val historyData = hashMapOf(
+                                        "id" to historyRef.id,
+                                        "userId" to scannedUserId,
+                                        "adminId" to admin.uid,
+                                        "cafeId" to p.cafeId,
+                                        "productId" to p.id,
+                                        "pointsAdded" to p.points,
+                                        "description" to "Начисление за ${p.name}",
+                                        "timestamp" to System.currentTimeMillis()
+                                    )
+                                    transaction.set(historyRef, historyData)
+                                }.addOnSuccessListener {
+                                    isLoading = false
+                                    Toast.makeText(
+                                        context,
+                                        "Начислено ${p.points} баллов!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    navController.popBackStack()
+                                }.addOnFailureListener { e ->
+                                    errorMessage = "Ошибка при начислении баллов: ${e.message}"
+                                    isLoading = false
+                                }
+                            }.addOnFailureListener { e ->
+                                errorMessage = "Ошибка при проверке баллов: ${e.message}"
+                                isLoading = false
+                            }
                         }
                     } else {
-                        error = "Неверный QR-код"
+                        errorMessage = "Недостаточно прав для начисления баллов"
                         isLoading = false
                     }
-                } else {
-                    error = "Товар не найден"
+                }
+                .addOnFailureListener { e ->
+                    errorMessage = "Ошибка проверки прав: ${e.message}"
                     isLoading = false
                 }
+        }
+    }
+
+    // Загружаем информацию о продукте
+    LaunchedEffect(productId) {
+        firestore.collection("products").document(productId)
+            .get()
+            .addOnSuccessListener { productDoc ->
+                product = productDoc.toObject(Product::class.java)?.copy(id = productDoc.id)
             }
-            .addOnFailureListener {
-                error = "Ошибка при проверке QR-кода"
-                isLoading = false
+            .addOnFailureListener { e ->
+                errorMessage = "Ошибка загрузки информации о товаре: ${e.message}"
             }
     }
 
-    fun launchScanner() {
-        val options = ScanOptions()
-            .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-            .setPrompt("Отсканируйте QR-код товара")
-            .setBeepEnabled(false)
-            .setCameraId(0)
-        scanLauncher.launch(options)
+    // Запрос разрешения камеры и UI остаются без изменений
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+
+    LaunchedEffect(cameraPermissionState.status.isGranted) {
+        if (cameraPermissionState.status.isGranted) {
+            val options = ScanOptions().apply {
+                setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                setPrompt("Отсканируйте QR-код клиента")
+                setBeepEnabled(false)
+                setCameraId(0)
+            }
+            scanLauncher.launch(options)
+        }
     }
 
+    // UI для отображения состояния и ошибок
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
         when {
-            !cameraPermissionState.status.isGranted -> {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        if (cameraPermissionState.status.shouldShowRationale) {
-                            "Для сканирования QR-кода необходим доступ к камере"
-                        } else {
-                            "Для работы приложения требуется доступ к камере"
-                        }
-                    )
-                    Button(onClick = { cameraPermissionState.launchPermissionRequest() }) {
-                        Text("Предоставить доступ")
-                    }
-                }
-            }
             isLoading -> {
                 CircularProgressIndicator()
             }
-            error != null -> {
+            errorMessage != null -> {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(error!!)
+                    Text(errorMessage!!)
                     Button(
                         onClick = {
-                            error = null
-                            launchScanner()
+                            if (cameraPermissionState.status.isGranted) {
+                                errorMessage = null
+                                val options = ScanOptions().apply {
+                                    setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                    setPrompt("Отсканируйте QR-код клиента")
+                                    setBeepEnabled(false)
+                                    setCameraId(0)
+                                }
+                                scanLauncher.launch(options)
+                            } else {
+                                cameraPermissionState.launchPermissionRequest()
+                            }
                         }
                     ) {
                         Text("Попробовать снова")
                     }
                 }
             }
-            else -> {
-                LaunchedEffect(cameraPermissionState.status.isGranted) {
-                    if (cameraPermissionState.status.isGranted) {
-                        launchScanner()
+            !cameraPermissionState.status.isGranted -> {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text("Для сканирования QR-кода необходим доступ к камере")
+                    Button(
+                        onClick = { cameraPermissionState.launchPermissionRequest() }
+                    ) {
+                        Text("Предоставить доступ")
                     }
                 }
             }

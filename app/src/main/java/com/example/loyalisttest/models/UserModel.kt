@@ -5,21 +5,11 @@ data class User(
     val email: String = "",
     val name: String = "",
     val role: UserRole = UserRole.USER,
-    val points: Int = 0,
-    val registrationDate: Long = 0,
-    val visitCount: Int = 0
+    val cafeId: String? = null, // Для админов - ID их кафе
+    val registrationDate: Long = System.currentTimeMillis()
 )
 
 enum class UserRole {
     ADMIN,
     USER
 }
-
-data class PointsHistoryRecord(
-    val id: String = "",
-    val userId: String = "",
-    val adminId: String = "",
-    val pointsAdded: Int = 0,
-    val timestamp: Long = 0,
-    val description: String = ""
-)

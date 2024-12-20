@@ -9,14 +9,17 @@ sealed class NavigationRoutes(val route: String) {
     data object Home : NavigationRoutes("main/home")
     data object Catalog : NavigationRoutes("main/catalog")
     data object Settings : NavigationRoutes("main/settings")
-    data object QrCodeFullscreen : NavigationRoutes("main/home/qr_fullscreen")
-    data object AddProduct : NavigationRoutes("main/catalog/add_product")
-    data object QrScanner : NavigationRoutes("main/catalog/qr_scanner/{productId}") {
-        fun createRoute(productId: String) = "main/catalog/qr_scanner/$productId"
+    data object PointsHistory : NavigationRoutes("main/points_history") {
+        fun createRoute() = "main/points_history"
     }
-    // Новые маршруты для админа
-    data object AdminQrScanner : NavigationRoutes("main/admin/qr_scanner")
-    data object AdminPointsHistory : NavigationRoutes("main/admin/points_history")
+    data object QrCodeFullscreen : NavigationRoutes("main/home/qr_fullscreen")
+    data object AddCafe : NavigationRoutes("main/catalog/add_cafe")
+    data object AddProduct : NavigationRoutes("main/catalog/add_product")
+
+    // Единый маршрут для сканирования QR-кодов
+    data object QrScanner : NavigationRoutes("main/scanner/{productId}") {
+        fun createRoute(productId: String) = "main/scanner/$productId"
+    }
 
     companion object {
         fun fromRoute(route: String?): NavigationRoutes {
@@ -30,12 +33,11 @@ sealed class NavigationRoutes(val route: String) {
                 Catalog.route -> Catalog
                 Settings.route -> Settings
                 QrCodeFullscreen.route -> QrCodeFullscreen
+                AddCafe.route -> AddCafe
                 AddProduct.route -> AddProduct
-                AdminQrScanner.route -> AdminQrScanner
-                AdminPointsHistory.route -> AdminPointsHistory
                 else -> {
                     when {
-                        route?.startsWith("main/catalog/qr_scanner/") == true -> QrScanner
+                        route?.startsWith("main/scanner/") == true -> QrScanner
                         else -> Welcome
                     }
                 }

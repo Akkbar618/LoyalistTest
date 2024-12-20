@@ -71,6 +71,7 @@ fun MainScreen(navController: NavHostController) {
             startDestination = NavigationRoutes.Home.route,
             modifier = Modifier.padding(paddingValues)
         ) {
+            // Базовые экраны
             composable(
                 route = NavigationRoutes.Home.route,
                 enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
@@ -95,21 +96,39 @@ fun MainScreen(navController: NavHostController) {
                 SettingsScreen()
             }
 
+            // История баллов
+            composable(
+                route = NavigationRoutes.PointsHistory.route,
+                enterTransition = { Transitions.enterScale() },
+                exitTransition = { Transitions.exitScale() }
+            ) {
+                PointsHistoryScreen(mainNavController)
+            }
+
+            // Добавление кафе и товаров
+            composable(
+                route = NavigationRoutes.AddCafe.route,
+                enterTransition = { Transitions.enterScale() },
+                exitTransition = { Transitions.exitScale() }
+            ) {
+                AddCafeScreen(mainNavController)
+            }
+
+            composable(
+                route = NavigationRoutes.AddProduct.route,
+                enterTransition = { Transitions.enterScale() },
+                exitTransition = { Transitions.exitScale() }
+            ) {
+                AddProductScreen(mainNavController)
+            }
+
+            // QR-код и сканирование
             composable(
                 route = NavigationRoutes.QrCodeFullscreen.route,
                 enterTransition = { Transitions.enterScale() },
                 exitTransition = { Transitions.exitScale() }
             ) {
                 QrCodeFullscreenScreen(mainNavController)
-            }
-
-            // Добавляем новый маршрут для админского сканера QR-кода
-            composable(
-                route = NavigationRoutes.AdminQrScanner.route,
-                enterTransition = { Transitions.enterScale() },
-                exitTransition = { Transitions.exitScale() }
-            ) {
-                AdminQrScannerScreen(mainNavController)
             }
 
             composable(
@@ -120,8 +139,7 @@ fun MainScreen(navController: NavHostController) {
                 enterTransition = { Transitions.enterScale() },
                 exitTransition = { Transitions.exitScale() }
             ) { backStackEntry ->
-                val productId = backStackEntry.arguments?.getString("productId")
-                    ?: return@composable
+                val productId = backStackEntry.arguments?.getString("productId") ?: ""
                 QrScannerScreen(
                     navController = mainNavController,
                     productId = productId

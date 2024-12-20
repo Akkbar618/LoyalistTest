@@ -19,16 +19,23 @@ object AdminUtils {
                 return Result.failure(Exception("Пользователь не найден"))
             }
 
-            // Обновляем роль пользователя на ADMIN
+            // Создаем или обновляем пользователя с ролью админа
+            val adminData = mapOf(
+                "email" to email,
+                "userId" to userId,
+                "role" to "ADMIN",
+                "updatedAt" to System.currentTimeMillis(),
+                "name" to (userDoc.getString("name") ?: "Admin"),
+                "totalPoints" to (userDoc.getLong("totalPoints") ?: 0),
+                "visitCount" to (userDoc.getLong("visitCount") ?: 0),
+                "registrationDate" to (userDoc.getLong("registrationDate")
+                    ?: System.currentTimeMillis())
+            )
+
+            // Обновляем документ пользователя
             firestore.collection("users")
                 .document(userId)
-                .update(
-                    mapOf(
-                        "role" to "ADMIN",
-                        "updatedAt" to System.currentTimeMillis(),
-                        "isAdmin" to true
-                    )
-                )
+                .set(adminData)
                 .await()
 
             Result.success(Unit)

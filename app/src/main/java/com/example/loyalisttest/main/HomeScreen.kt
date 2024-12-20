@@ -5,99 +5,100 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.loyalisttest.models.*
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.example.loyalisttest.utils.QrCodeGenerator
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-
-data class Promotion(
-    val id: String,
-    val title: String,
-    val discount: String,
-    val imageUrl: String
-)
-
-data class Recommendation(
-    val id: String,
-    val name: String,
-    val address: String,
-    val imageUrl: String,
-    val rating: Float
-)
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
+    var isAdmin by remember { mutableStateOf(false) }
+    var cafePoints by remember { mutableStateOf<List<UserPoints>>(emptyList()) }
+    var cafes by remember { mutableStateOf<Map<String, Cafe>>(emptyMap()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
     val context = LocalContext.current
-    val currentUser = remember { FirebaseAuth.getInstance().currentUser }
+    val currentUser = FirebaseAuth.getInstance().currentUser
     val userName = remember { currentUser?.displayName ?: "Пользователь" }
     val userId = currentUser?.uid ?: ""
     val firestore = FirebaseFirestore.getInstance()
 
-    var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var userPoints by remember { mutableStateOf(0) }
-    var isPointsLoading by remember { mutableStateOf(true) }
-
-    // Загрузка QR-кода
     LaunchedEffect(userId) {
-        if (userId.isNotBlank()) {
-            try {
-                qrCodeBitmap = QrCodeGenerator.generateQrCode(userId, 256, 256)
-            } finally {
+        if (userId.isBlank()) {
+            error = "Пользователь не авторизован"
+            isLoading = false
+            return@LaunchedEffect
+        }
+
+        // Слушаем изменения пользователя
+        firestore.collection("users")
+            .document(userId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    error = e.message
+                    return@addSnapshotListener
+                }
+
+                isAdmin = snapshot?.getString("role") == "ADMIN"
+            }
+
+        // Слушаем изменения кафе
+        firestore.collection("cafes")
+            .whereEqualTo("isActive", true)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    error = e.message
+                    return@addSnapshotListener
+                }
+
+                cafes = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Cafe::class.java)?.let { cafe ->
+                        doc.id to cafe.copy(id = doc.id)
+                    }
+                }?.toMap() ?: emptyMap()
+            }
+
+        // Слушаем изменения баллов
+        firestore.collection("userPoints")
+            .whereEqualTo("userId", userId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    error = e.message
+                    return@addSnapshotListener
+                }
+
+                cafePoints = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(UserPoints::class.java)?.let { points ->
+                        points.copy(
+                            cafeId = doc.getString("cafeId") ?: "",
+                            userId = userId
+                        )
+                    }
+                } ?: emptyList()
+
                 isLoading = false
             }
-        } else {
-            isLoading = false
-        }
-    }
-
-    // Получение баллов пользователя в реальном времени
-    LaunchedEffect(userId) {
-        if (userId.isNotBlank()) {
-            val listener = firestore.collection("users")
-                .document(userId)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        return@addSnapshotListener
-                    }
-                    userPoints = snapshot?.getLong("points")?.toInt() ?: 0
-                    isPointsLoading = false
-                }
-        }
-    }
-
-    // Пример данных для промо и рекомендаций
-    val promotions = remember {
-        listOf(
-            Promotion("1", "Сидите дома", "-15%", "url_to_image"),
-            Promotion("2", "-17% на пиццу", "-17%", "url_to_image")
-        )
-    }
-
-    val recommendations = remember {
-        listOf(
-            Recommendation("1", "БабаГриль", "ул. Ленинская, 28", "url_to_image", 4.8f),
-            Recommendation("2", "DonerDon", "ул. Дубова, 13", "url_to_image", 4.7f)
-        )
     }
 
     Column(
@@ -105,10 +106,11 @@ fun HomeScreen(navController: NavHostController) {
             .fillMaxSize()
             .padding(bottom = 16.dp)
     ) {
-        // Верхняя панель с приветствием и уведомлениями
+        // Верхняя панель
+        // В HomeScreen добавьте кнопку в верхнюю панель:
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.primary,
             shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp)
         ) {
             Row(
@@ -118,228 +120,210 @@ fun HomeScreen(navController: NavHostController) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    Text(
-                        text = "С возвращением,\n$userName!",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        lineHeight = 18.sp
-                    )
-                }
-                IconButton(onClick = { /* Обработка уведомлений */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = "Уведомления",
-                        tint = Color.White
-                    )
-                }
-            }
-        }
-
-        // QR-код пользователя
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
                 Text(
-                    text = "Мой QR-код",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    text = "Привет,\n$userName!",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = 18.sp,
+                    lineHeight = 24.sp
                 )
-
-                Box(
-                    modifier = Modifier
-                        .size(200.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White)
-                        .clickable {
-                            navController.navigate(NavigationRoutes.QrCodeFullscreen.route) {
-                                launchSingleTop = true
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator()
-                    } else if (qrCodeBitmap != null) {
-                        Box {
-                            Image(
-                                bitmap = qrCodeBitmap!!.asImageBitmap(),
-                                contentDescription = "QR Code",
-                                modifier = Modifier.fillMaxSize()
-                            )
-                            IconButton(
-                                onClick = {
-                                    navController.navigate(NavigationRoutes.QrCodeFullscreen.route) {
-                                        launchSingleTop = true
-                                    }
-                                },
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Развернуть",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
+                Row {
+                    IconButton(onClick = {
+                        navController.navigate(NavigationRoutes.PointsHistory.route)
+                    }) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "История баллов",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    IconButton(onClick = { /* Обработка уведомлений */ }) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = "Уведомления",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 }
             }
         }
 
-        // Карточка с баллами
-        Card(
+        if (!isAdmin) {
+            // QR-код для пользователей
+            var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
+            var isQrLoading by remember { mutableStateOf(true) }
+
+            LaunchedEffect(userId) {
+                if (userId.isNotBlank()) {
+                    try {
+                        qrCodeBitmap = QrCodeGenerator.generateQrCode(userId, 256, 256)
+                    } finally {
+                        isQrLoading = false
+                    }
+                }
+            }
+
+            QrCodeCard(
+                qrCodeBitmap = qrCodeBitmap,
+                isLoading = isQrLoading,
+                onFullscreenClick = {
+                    navController.navigate(NavigationRoutes.QrCodeFullscreen.route)
+                }
+            )
+        }
+
+        // Основной контент
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            error != null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = error ?: "Произошла ошибка",
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+            cafePoints.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "У вас пока нет баллов",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(
+                        items = cafePoints,
+                        key = { "${it.cafeId}_${it.userId}" }
+                    ) { points ->
+                        cafes[points.cafeId]?.let { cafe ->
+                            CafePointsCard(
+                                cafe = cafe,
+                                points = points,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QrCodeCard(
+    qrCodeBitmap: Bitmap?,
+    isLoading: Boolean,
+    onFullscreenClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(16.dp)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+            Text(
+                text = "Ваш QR-код",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .size(200.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(onClick = onFullscreenClick),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Ваши баллы",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                if (isPointsLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                } else {
-                    Text(
-                        text = userPoints.toString(),
-                        style = MaterialTheme.typography.displayMedium,
-                        fontWeight = FontWeight.Bold
+                if (isLoading) {
+                    CircularProgressIndicator()
+                } else if (qrCodeBitmap != null) {
+                    Image(
+                        bitmap = qrCodeBitmap.asImageBitmap(),
+                        contentDescription = "QR Code",
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }
         }
-
-        // Горячие предложения
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Горячие предложения",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                TextButton(onClick = { /* Показать все предложения */ }) {
-                    Text("Смотреть все")
-                }
-            }
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(promotions) { promotion ->
-                    PromotionCard(promotion)
-                }
-            }
-        }
-
-        // Рекомендации
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Рекомендации",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                TextButton(onClick = { /* Показать все рекомендации */ }) {
-                    Text("Смотреть все")
-                }
-            }
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(recommendations) { recommendation ->
-                    RecommendationCard(recommendation)
-                }
-            }
-        }
     }
 }
 
 @Composable
-fun PromotionCard(promotion: Promotion) {
+private fun CafePointsCard(
+    cafe: Cafe,
+    points: UserPoints,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier
-            .width(280.dp)
-            .height(150.dp)
-            .clickable { /* Обработка нажатия */ },
-        shape = RoundedCornerShape(12.dp)
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
             Text(
-                text = promotion.title,
-                color = Color.White,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
+                text = cafe.name,
+                style = MaterialTheme.typography.titleMedium
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                text = promotion.discount,
-                color = Color.White,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                text = "Текущий баланс: ${points.currentPoints}",
+                style = MaterialTheme.typography.bodyLarge
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Всего заработано: ${points.totalEarnedPoints}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Последнее обновление: ${formatDate(points.lastUpdated)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
-@Composable
-fun RecommendationCard(recommendation: Recommendation) {
-    Card(
-        modifier = Modifier
-            .width(200.dp)
-            .height(120.dp)
-            .clickable { /* Обработка нажатия */ },
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(12.dp)
-            ) {
-                Text(
-                    text = recommendation.name,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = recommendation.address,
-                    color = Color.White,
-                    fontSize = 12.sp
-                )
-            }
-        }
-    }
+private fun formatDate(timestamp: Long): String {
+    return SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(timestamp))
 }

@@ -5,12 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.loyalisttest.auth.*
 import com.example.loyalisttest.main.*
 import com.example.loyalisttest.navigation.NavigationActions.navigateToForgotPassword
 import com.example.loyalisttest.navigation.NavigationActions.navigateToSignIn
 import com.example.loyalisttest.navigation.NavigationActions.navigateToSignUp
 import com.example.loyalisttest.ui.theme.Transitions
+import androidx.navigation.NavType
 
 @Composable
 fun SetupNavGraph(
@@ -21,6 +23,7 @@ fun SetupNavGraph(
         navController = navController,
         startDestination = startDestination
     ) {
+        // Авторизация
         composable(
             route = NavigationRoutes.Welcome.route,
             enterTransition = { Transitions.authEnterTransition() },
@@ -76,6 +79,7 @@ fun SetupNavGraph(
             )
         }
 
+        // Основной экран
         composable(
             route = NavigationRoutes.Main.route,
             enterTransition = { Transitions.authEnterTransition() },
@@ -84,25 +88,7 @@ fun SetupNavGraph(
             MainScreen(navController = navController)
         }
 
-        // Новые маршруты для админа
-        composable(
-            route = NavigationRoutes.AdminQrScanner.route,
-            enterTransition = { Transitions.enterScale() },
-            exitTransition = { Transitions.exitScale() }
-        ) {
-            AdminQrScannerScreen(navController = navController)
-        }
-
-        composable(
-            route = NavigationRoutes.AdminPointsHistory.route,
-            enterTransition = { Transitions.enterScale() },
-            exitTransition = { Transitions.exitScale() }
-        ) {
-            // Здесь будет экран истории начисления баллов
-            // PointsHistoryScreen(navController = navController)
-        }
-
-        // Существующие маршруты остаются без изменений
+        // QR-код и сканирование
         composable(
             route = NavigationRoutes.QrCodeFullscreen.route,
             enterTransition = { Transitions.enterScale() },
@@ -113,14 +99,51 @@ fun SetupNavGraph(
 
         composable(
             route = NavigationRoutes.QrScanner.route,
+            arguments = listOf(
+                navArgument("productId") { type = NavType.StringType }
+            ),
             enterTransition = { Transitions.enterScale() },
             exitTransition = { Transitions.exitScale() }
         ) { backStackEntry ->
-            val productId = backStackEntry.arguments?.getString("productId")
+            val productId = backStackEntry.arguments?.getString("productId") ?: ""
             QrScannerScreen(
                 navController = navController,
-                productId = productId ?: ""
+                productId = productId
             )
+        }
+
+        // Добавление товара
+        composable(
+            route = NavigationRoutes.AddProduct.route,
+            enterTransition = { Transitions.enterScale() },
+            exitTransition = { Transitions.exitScale() }
+        ) {
+            AddProductScreen(navController)
+        }
+
+        // Существующие маршруты нижней навигации
+        composable(
+            route = NavigationRoutes.Home.route,
+            enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
+            exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
+        ) {
+            HomeScreen(navController)
+        }
+
+        composable(
+            route = NavigationRoutes.Catalog.route,
+            enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
+            exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
+        ) {
+            CatalogScreen(navController)
+        }
+
+        composable(
+            route = NavigationRoutes.Settings.route,
+            enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
+            exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
+        ) {
+            SettingsScreen()
         }
     }
 }
