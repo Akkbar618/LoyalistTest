@@ -16,10 +16,9 @@ import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import android.widget.Toast
-import com.example.loyalisttest.models.Product
 import com.example.loyalisttest.models.Cafe
+import com.example.loyalisttest.models.UserRole
 import kotlinx.coroutines.tasks.await
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,29 +28,64 @@ fun AddProductScreen(
 ) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var points by remember { mutableStateOf("") }
+    var scaleSize by remember { mutableStateOf("10") }
     var price by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var selectedCafe by remember { mutableStateOf<Cafe?>(null) }
     var cafes by remember { mutableStateOf<List<Cafe>>(emptyList()) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var userRole by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
     val currentUser = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
 
-    // Загружаем список кафе
-    LaunchedEffect(Unit) {
+    // Загружаем кафе в зависимости от роли пользователя
+    LaunchedEffect(currentUser) {
         try {
             isLoading = true
-            val snapshot = firestore.collection("cafes")
-                .whereEqualTo("active", true)
-                .get()
-                .await()
+            if (currentUser != null) {
+                // Получаем роль пользователя
+                val userDoc = firestore.collection("users")
+                    .document(currentUser.uid)
+                    .get()
+                    .await()
 
-            cafes = snapshot.documents.mapNotNull { doc ->
-                doc.toObject(Cafe::class.java)?.copy(id = doc.id)
+                userRole = userDoc.getString("role")
+
+                // В зависимости от роли загружаем кафе
+                val cafesQuery = when (userRole) {
+                    UserRole.SUPER_ADMIN.name -> {
+                        // Супер-админ видит все активные кафе
+                        firestore.collection("cafes")
+                            .whereEqualTo("active", true)
+                    }
+                    UserRole.ADMIN.name -> {
+                        // Админ видит только свои кафе
+                        val managedCafes = userDoc.get("managedCafes") as? List<String> ?: emptyList()
+                        if (managedCafes.isEmpty()) {
+                            error = "У вас нет прикрепленных кафе"
+                            return@LaunchedEffect
+                        }
+                        firestore.collection("cafes")
+                            .whereEqualTo("active", true)
+                            .whereIn("id", managedCafes)
+                    }
+                    else -> {
+                        error = "Недостаточно прав для добавления товаров"
+                        return@LaunchedEffect
+                    }
+                }
+
+                val snapshot = cafesQuery.get().await()
+                cafes = snapshot.documents.mapNotNull { doc ->
+                    doc.toObject(Cafe::class.java)?.copy(id = doc.id)
+                }
+
+                if (cafes.isEmpty()) {
+                    error = "Нет доступных кафе"
+                }
             }
         } catch (e: Exception) {
             error = "Ошибка загрузки списка кафе: ${e.message}"
@@ -60,35 +94,41 @@ fun AddProductScreen(
         }
     }
 
+    fun validateInputs(): Boolean {
+        return when {
+            selectedCafe == null -> {
+                error = "Выберите кафе"
+                false
+            }
+            name.isBlank() -> {
+                error = "Введите название товара"
+                false
+            }
+            description.isBlank() -> {
+                error = "Введите описание"
+                false
+            }
+            scaleSize.toIntOrNull() == null || scaleSize.toInt() < 1 -> {
+                error = "Количество делений должно быть больше 0"
+                false
+            }
+            price.isBlank() || price.toDoubleOrNull() == null -> {
+                error = "Введите корректную цену"
+                false
+            }
+            else -> true
+        }
+    }
+
     fun addProduct() {
-        if (selectedCafe == null) {
-            error = "Выберите кафе"
-            return
-        }
-        if (name.isBlank()) {
-            error = "Введите название товара"
-            return
-        }
-        if (description.isBlank()) {
-            error = "Введите описание"
-            return
-        }
-        if (points.isBlank() || points.toIntOrNull() == null) {
-            error = "Введите корректное количество баллов"
-            return
-        }
-        if (price.isBlank() || price.toDoubleOrNull() == null) {
-            error = "Введите корректную цену"
-            return
-        }
+        if (!validateInputs()) return
 
         isLoading = true
 
-        // Создаем данные продукта в правильном формате для Firestore
-        val productData = mapOf(
+        val productData = hashMapOf<String, Any>( // Явно указываем тип
             "name" to name.trim(),
             "description" to description.trim(),
-            "points" to (points.toIntOrNull() ?: 0),
+            "scaleSize" to (scaleSize.toIntOrNull() ?: 10),
             "price" to (price.toDoubleOrNull() ?: 0.0),
             "cafeId" to (selectedCafe?.id ?: ""),
             "active" to true,
@@ -98,24 +138,59 @@ fun AddProductScreen(
             "imageUrl" to ""
         )
 
-        firestore.collection("products")
-            .add(productData)
-            .addOnSuccessListener { docRef ->
-                // Обновляем ID документа
-                docRef.update(mapOf("id" to docRef.id))
-                    .addOnSuccessListener {
-                        Toast.makeText(context, "Товар успешно добавлен", Toast.LENGTH_SHORT).show()
-                        navController.popBackStack()
-                    }
-                    .addOnFailureListener { e ->
-                        error = "Ошибка обновления ID товара: ${e.message}"
-                        isLoading = false
-                    }
+        // И изменим сигнатуру внутренней функции:
+        fun addProductToFirestore(data: Map<String, Any>) {
+            firestore.collection("products")
+                .add(data)
+                .addOnSuccessListener { docRef ->
+                    docRef.update(mapOf("id" to docRef.id))
+                        .addOnSuccessListener {
+                            Toast.makeText(context, "Товар успешно добавлен", Toast.LENGTH_SHORT).show()
+                            navController.popBackStack()
+                        }
+                        .addOnFailureListener { e ->
+                            error = "Ошибка обновления ID товара: ${e.message}"
+                            isLoading = false
+                        }
+                }
+                .addOnFailureListener { e ->
+                    error = "Ошибка при добавлении товара: ${e.message}"
+                    isLoading = false
+                }
+        }
+
+        // Проверяем права на добавление товара
+        when (userRole) {
+            UserRole.SUPER_ADMIN.name -> {
+                // Супер-админ может добавлять товары в любое кафе
+                addProductToFirestore(productData)
             }
-            .addOnFailureListener { e ->
-                error = "Ошибка при добавлении товара: ${e.message}"
+            UserRole.ADMIN.name -> {
+                // Проверяем, принадлежит ли кафе админу
+                currentUser?.let { user ->
+                    firestore.collection("users")
+                        .document(user.uid)
+                        .get()
+                        .addOnSuccessListener { userDoc ->
+                            val managedCafes = userDoc.get("managedCafes") as? List<String> ?: emptyList()
+                            if (managedCafes.contains(selectedCafe?.id)) {
+                                addProductToFirestore(productData)
+                            } else {
+                                error = "У вас нет прав на добавление товаров в это кафе"
+                                isLoading = false
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            error = "Ошибка проверки прав: ${e.message}"
+                            isLoading = false
+                        }
+                }
+            }
+            else -> {
+                error = "Недостаточно прав для добавления товаров"
                 isLoading = false
             }
+        }
     }
 
     Scaffold(
@@ -170,6 +245,7 @@ fun AddProductScreen(
                 }
             }
 
+            // Название товара
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -178,6 +254,7 @@ fun AddProductScreen(
                 enabled = !isLoading
             )
 
+            // Описание
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
@@ -187,15 +264,18 @@ fun AddProductScreen(
                 enabled = !isLoading
             )
 
+            // Количество делений шкалы
             OutlinedTextField(
-                value = points,
-                onValueChange = { points = it.filter { char -> char.isDigit() } },
-                label = { Text("Баллы за покупку") },
+                value = scaleSize,
+                onValueChange = { scaleSize = it.filter { char -> char.isDigit() } },
+                label = { Text("Количество делений для награды") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = !isLoading
+                enabled = !isLoading,
+                supportingText = { Text("Сколько покупок нужно для получения награды") }
             )
 
+            // Цена
             OutlinedTextField(
                 value = price,
                 onValueChange = { price = it.filter { char -> char.isDigit() || char == '.' } },
@@ -204,6 +284,14 @@ fun AddProductScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 enabled = !isLoading
             )
+
+            if (error != null) {
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
 
             Button(
                 onClick = { addProduct() },

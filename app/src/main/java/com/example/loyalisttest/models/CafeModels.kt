@@ -4,23 +4,30 @@ data class Cafe(
     val id: String = "",
     val name: String = "",
     val description: String = "",
-    val isActive: Boolean = true
+    val category: String = CafeCategory.OTHER.name,
+    val active: Boolean = true,
+    val createdBy: String = "",
+    val createdAt: Long = System.currentTimeMillis()
 )
+
 data class UserPoints(
-    val cafeId: String = "",
     val userId: String = "",
-    val currentPoints: Int = 0,
-    val totalEarnedPoints: Int = 0,
+    val cafeId: String = "",
+    val productId: String = "",
+    val currentProgress: Int = 0,
+    val totalScans: Int = 0,
+    val rewardsReceived: Int = 0,
     val lastUpdated: Long = System.currentTimeMillis()
 )
+
 data class Product(
     val id: String = "",
     val cafeId: String = "",
     val name: String = "",
     val description: String = "",
-    val points: Int = 0,
+    val scaleSize: Int = 10,
     val price: Double = 0.0,
-    val active: Boolean = true,  // Изменено с isActive на active
+    val active: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
     val createdBy: String = "",
     val category: String = "",

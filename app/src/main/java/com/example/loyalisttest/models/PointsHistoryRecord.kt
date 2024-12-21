@@ -6,7 +6,8 @@ data class PointsHistoryRecord(
     val adminId: String = "",
     val cafeId: String = "",
     val productId: String = "",
-    val pointsAdded: Int = 0,
     val description: String = "",
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val progress: Int = 0,
+    val isReward: Boolean = false
 )

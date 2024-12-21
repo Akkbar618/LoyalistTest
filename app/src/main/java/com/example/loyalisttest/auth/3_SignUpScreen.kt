@@ -10,21 +10,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
+import androidx.lifecycle.lifecycleScope
 import com.example.loyalisttest.R
 import com.example.loyalisttest.components.AuthButton
 import com.example.loyalisttest.components.AuthTextField
 import com.example.loyalisttest.components.BackButton
+import com.example.loyalisttest.utils.FirestoreInitUtils
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 @Composable
 fun SignUpScreen(
@@ -41,48 +45,36 @@ fun SignUpScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-    val firestore = FirebaseFirestore.getInstance()
+    val lifecycleScope = LocalLifecycleOwner.current.lifecycleScope
 
     fun validateInput(): Boolean {
-        if (name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-            Toast.makeText(context, "Заполните все поля", Toast.LENGTH_SHORT).show()
-            return false
-        }
-        if (password != confirmPassword) {
-            Toast.makeText(context, "Пароли не совпадают", Toast.LENGTH_SHORT).show()
-            return false
-        }
-        if (password.length < 6) {
-            Toast.makeText(context, "Пароль должен быть не менее 6 символов", Toast.LENGTH_SHORT).show()
-            return false
-        }
-        return true
-    }
-
-    fun createUserProfile(userId: String, name: String, email: String) {
-        val userProfile = hashMapOf(
-            "userId" to userId,
-            "name" to name,
-            "email" to email,
-            "registrationDate" to System.currentTimeMillis(),
-            "totalPoints" to 0,
-            "visitCount" to 0
-        )
-
-        firestore.collection("users")
-            .document(userId)
-            .set(userProfile)
-            .addOnSuccessListener {
-                Log.d("SignUpScreen", "Профиль пользователя создан")
+        return when {
+            name.isBlank() -> {
+                Toast.makeText(context, "Введите имя", Toast.LENGTH_SHORT).show()
+                false
             }
-            .addOnFailureListener { e ->
-                Log.e("SignUpScreen", "Ошибка создания профиля", e)
-                Toast.makeText(
-                    context,
-                    "Ошибка создания профиля: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
+            email.isBlank() -> {
+                Toast.makeText(context, "Введите email", Toast.LENGTH_SHORT).show()
+                false
             }
+            password.isBlank() -> {
+                Toast.makeText(context, "Введите пароль", Toast.LENGTH_SHORT).show()
+                false
+            }
+            confirmPassword.isBlank() -> {
+                Toast.makeText(context, "Подтвердите пароль", Toast.LENGTH_SHORT).show()
+                false
+            }
+            password != confirmPassword -> {
+                Toast.makeText(context, "Пароли не совпадают", Toast.LENGTH_SHORT).show()
+                false
+            }
+            password.length < 6 -> {
+                Toast.makeText(context, "Пароль должен быть не менее 6 символов", Toast.LENGTH_SHORT).show()
+                false
+            }
+            else -> true
+        }
     }
 
     fun handleSignUp(name: String, email: String, password: String) {
@@ -94,50 +86,41 @@ fun SignUpScreen(
         }
 
         isLoading = true
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val user = auth.currentUser
-                    val profileUpdates = UserProfileChangeRequest.Builder()
-                        .setDisplayName(name)
-                        .build()
+        lifecycleScope.launch {
+            try {
+                // Проверяем, первый ли это пользователь
+                val isFirstUser = FirestoreInitUtils.isFirstUser()
 
-                    user?.updateProfile(profileUpdates)
-                        ?.addOnCompleteListener { profileTask ->
-                            if (profileTask.isSuccessful) {
-                                // Создаем профиль пользователя в Firestore
-                                user.uid.let { userId ->
-                                    createUserProfile(userId, name, email)
-                                }
+                // Создаем пользователя в Firebase Auth
+                val result = auth.createUserWithEmailAndPassword(email, password).await()
+                val user = result.user ?: throw Exception("Failed to create user")
 
-                                isLoading = false
-                                Log.d("SignUpScreen", "Регистрация успешна")
-                                Toast.makeText(
-                                    context,
-                                    "Регистрация успешна",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                onSignUpClick(name, email, password)
-                            } else {
-                                isLoading = false
-                                Log.e("SignUpScreen", "Ошибка обновления профиля", profileTask.exception)
-                                Toast.makeText(
-                                    context,
-                                    "Ошибка обновления профиля: ${profileTask.exception?.message}",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-                        }
-                } else {
-                    isLoading = false
-                    Log.e("SignUpScreen", "Ошибка регистрации", task.exception)
-                    Toast.makeText(
-                        context,
-                        "Ошибка регистрации: ${task.exception?.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                // Обновляем профиль пользователя
+                val profileUpdates = UserProfileChangeRequest.Builder()
+                    .setDisplayName(name)
+                    .build()
+                user.updateProfile(profileUpdates).await()
+
+                // Инициализируем коллекции Firestore
+                FirestoreInitUtils.initializeCollections(user.uid, email, name, isFirstUser)
+                    .onSuccess {
+                        Toast.makeText(context, "Регистрация успешна", Toast.LENGTH_SHORT).show()
+                        onSignUpClick(name, email, password)
+                    }
+                    .onFailure { e ->
+                        throw e
+                    }
+            } catch (e: Exception) {
+                Log.e("SignUpScreen", "Ошибка регистрации", e)
+                Toast.makeText(
+                    context,
+                    "Ошибка регистрации: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                isLoading = false
             }
+        }
     }
 
     val constraints = ConstraintSet {

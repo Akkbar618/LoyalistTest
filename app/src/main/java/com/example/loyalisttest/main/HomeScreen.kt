@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.loyalisttest.components.ProgressScale
 import com.example.loyalisttest.models.*
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.example.loyalisttest.utils.QrCodeGenerator
@@ -33,8 +34,9 @@ import java.util.*
 @Composable
 fun HomeScreen(navController: NavHostController) {
     var isAdmin by remember { mutableStateOf(false) }
-    var cafePoints by remember { mutableStateOf<List<UserPoints>>(emptyList()) }
+    var userPointsList by remember { mutableStateOf<List<UserPoints>>(emptyList()) }
     var cafes by remember { mutableStateOf<Map<String, Cafe>>(emptyMap()) }
+    var products by remember { mutableStateOf<Map<String, Product>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -65,7 +67,7 @@ fun HomeScreen(navController: NavHostController) {
 
         // Слушаем изменения кафе
         firestore.collection("cafes")
-            .whereEqualTo("isActive", true)
+            .whereEqualTo("active", true)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
                     error = e.message
@@ -79,7 +81,23 @@ fun HomeScreen(navController: NavHostController) {
                 }?.toMap() ?: emptyMap()
             }
 
-        // Слушаем изменения баллов
+        // Загружаем все продукты
+        firestore.collection("products")
+            .whereEqualTo("active", true)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    error = e.message
+                    return@addSnapshotListener
+                }
+
+                products = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Product::class.java)?.let { product ->
+                        doc.id to product.copy(id = doc.id)
+                    }
+                }?.toMap() ?: emptyMap()
+            }
+
+        // Слушаем изменения прогресса пользователя
         firestore.collection("userPoints")
             .whereEqualTo("userId", userId)
             .addSnapshotListener { snapshot, e ->
@@ -88,13 +106,15 @@ fun HomeScreen(navController: NavHostController) {
                     return@addSnapshotListener
                 }
 
-                cafePoints = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(UserPoints::class.java)?.let { points ->
-                        points.copy(
-                            cafeId = doc.getString("cafeId") ?: "",
-                            userId = userId
-                        )
-                    }
+                userPointsList = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(UserPoints::class.java)?.copy(
+                        cafeId = doc.getString("cafeId") ?: "",
+                        productId = doc.getString("productId") ?: "",
+                        userId = userId,
+                        currentProgress = doc.getLong("currentProgress")?.toInt() ?: 0,
+                        totalScans = doc.getLong("totalScans")?.toInt() ?: 0,
+                        rewardsReceived = doc.getLong("rewardsReceived")?.toInt() ?: 0
+                    )
                 } ?: emptyList()
 
                 isLoading = false
@@ -107,7 +127,6 @@ fun HomeScreen(navController: NavHostController) {
             .padding(bottom = 16.dp)
     ) {
         // Верхняя панель
-        // В HomeScreen добавьте кнопку в верхнюю панель:
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primary,
@@ -132,14 +151,7 @@ fun HomeScreen(navController: NavHostController) {
                     }) {
                         Icon(
                             Icons.Default.Notifications,
-                            contentDescription = "История баллов",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                    IconButton(onClick = { /* Обработка уведомлений */ }) {
-                        Icon(
-                            Icons.Default.Notifications,
-                            contentDescription = "Уведомления",
+                            contentDescription = "История прогресса",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
@@ -194,13 +206,13 @@ fun HomeScreen(navController: NavHostController) {
                     )
                 }
             }
-            cafePoints.isEmpty() -> {
+            userPointsList.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "У вас пока нет баллов",
+                        text = "У вас пока нет прогресса",
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(16.dp)
@@ -215,13 +227,14 @@ fun HomeScreen(navController: NavHostController) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(
-                        items = cafePoints,
-                        key = { "${it.cafeId}_${it.userId}" }
-                    ) { points ->
-                        cafes[points.cafeId]?.let { cafe ->
-                            CafePointsCard(
+                        items = userPointsList.groupBy { it.cafeId }.entries.toList(),
+                        key = { it.key }
+                    ) { (cafeId, pointsList) ->
+                        cafes[cafeId]?.let { cafe ->
+                            CafeCard(
                                 cafe = cafe,
-                                points = points,
+                                pointsList = pointsList,
+                                products = products,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -279,9 +292,10 @@ private fun QrCodeCard(
 }
 
 @Composable
-private fun CafePointsCard(
+private fun CafeCard(
     cafe: Cafe,
-    points: UserPoints,
+    pointsList: List<UserPoints>,
+    products: Map<String, Product>,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -295,28 +309,50 @@ private fun CafePointsCard(
         ) {
             Text(
                 text = cafe.name,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleLarge
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            pointsList.forEach { points ->
+                products[points.productId]?.let { product ->
+                    Column(
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        Text(
+                            text = product.name,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        ProgressScale(
+                            currentProgress = points.currentProgress,
+                            maxProgress = product.scaleSize
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "${points.currentProgress} из ${product.scaleSize}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                text = "Получено наград: ${points.rewardsReceived}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            }
 
             Text(
-                text = "Текущий баланс: ${points.currentPoints}",
-                style = MaterialTheme.typography.bodyLarge
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Всего заработано: ${points.totalEarnedPoints}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Последнее обновление: ${formatDate(points.lastUpdated)}",
+                text = "Последнее обновление: ${formatDate(pointsList.maxOf { it.lastUpdated })}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

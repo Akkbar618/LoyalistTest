@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.loyalisttest.models.PointsHistoryRecord
+import com.example.loyalisttest.models.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -29,11 +29,12 @@ fun PointsHistoryScreen(
     var isLoading by remember { mutableStateOf(true) }
     var historyRecords by remember { mutableStateOf<List<PointsHistoryRecord>>(emptyList()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var currentUserRole by remember { mutableStateOf<String?>(null) }
 
     val currentUser = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
 
-    // Загрузка истории начисления баллов
+    // Загрузка истории
     LaunchedEffect(currentUser) {
         if (currentUser == null) {
             errorMessage = "Пользователь не авторизован"
@@ -41,27 +42,43 @@ fun PointsHistoryScreen(
             return@LaunchedEffect
         }
 
+        // Проверяем роль пользователя
         firestore.collection("users")
             .document(currentUser.uid)
             .get()
             .addOnSuccessListener { userDoc ->
-                val isAdmin = userDoc.getString("role") == "ADMIN"
+                currentUserRole = userDoc.getString("role")
 
-                // В зависимости от роли пользователя показываем разную историю
-                val query = if (isAdmin) {
-                    firestore.collection("pointsHistory")
-                        .orderBy("timestamp", Query.Direction.DESCENDING)
-                        .limit(100)
-                } else {
-                    firestore.collection("pointsHistory")
-                        .whereEqualTo("userId", currentUser.uid)
-                        .orderBy("timestamp", Query.Direction.DESCENDING)
-                        .limit(50)
+                // В зависимости от роли формируем запрос
+                val query = when (currentUserRole) {
+                    UserRole.SUPER_ADMIN.name -> {
+                        // Супер-админ видит всю историю
+                        firestore.collection("pointsHistory")
+                            .orderBy("timestamp", Query.Direction.DESCENDING)
+                    }
+                    UserRole.ADMIN.name -> {
+                        // Админ видит историю своих кафе
+                        val managedCafes = userDoc.get("managedCafes") as? List<String> ?: emptyList()
+                        if (managedCafes.isEmpty()) {
+                            errorMessage = "У вас нет прикрепленных кафе"
+                            isLoading = false
+                            return@addOnSuccessListener
+                        }
+                        firestore.collection("pointsHistory")
+                            .whereIn("cafeId", managedCafes)
+                            .orderBy("timestamp", Query.Direction.DESCENDING)
+                    }
+                    else -> {
+                        // Обычный пользователь видит только свою историю
+                        firestore.collection("pointsHistory")
+                            .whereEqualTo("userId", currentUser.uid)
+                            .orderBy("timestamp", Query.Direction.DESCENDING)
+                    }
                 }
 
-                query.addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        errorMessage = "Ошибка загрузки истории: ${error.message}"
+                query.addSnapshotListener { snapshot, e ->
+                    if (e != null) {
+                        errorMessage = "Ошибка загрузки истории: ${e.message}"
                         isLoading = false
                         return@addSnapshotListener
                     }
@@ -82,7 +99,7 @@ fun PointsHistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("История начисления баллов") },
+                title = { Text("История прогресса") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, "Назад")
@@ -127,7 +144,10 @@ fun PointsHistoryScreen(
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
                         items(historyRecords) { record ->
-                            HistoryRecordCard(record)
+                            HistoryRecordCard(
+                                record = record,
+                                isSuperAdmin = currentUserRole == UserRole.SUPER_ADMIN.name
+                            )
                         }
                     }
                 }
@@ -136,62 +156,109 @@ fun PointsHistoryScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HistoryRecordCard(record: PointsHistoryRecord) {
-    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
+private fun HistoryRecordCard(
+    record: PointsHistoryRecord,
+    isSuperAdmin: Boolean,
+    modifier: Modifier = Modifier
+) {
     var userName by remember { mutableStateOf<String?>(null) }
-    val firestore = FirebaseFirestore.getInstance()
+    var cafeName by remember { mutableStateOf<String?>(null) }
+    var productName by remember { mutableStateOf<String?>(null) }
 
-    // Загружаем имя пользователя
-    LaunchedEffect(record.userId) {
+    val firestore = FirebaseFirestore.getInstance()
+    val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
+
+    // Загружаем дополнительную информацию
+    LaunchedEffect(record) {
+        // Загружаем имя пользователя
         firestore.collection("users")
             .document(record.userId)
             .get()
             .addOnSuccessListener { doc ->
                 userName = doc.getString("name") ?: "Неизвестный пользователь"
             }
+
+        // Если супер-админ, загружаем информацию о кафе и товаре
+        if (isSuperAdmin) {
+            firestore.collection("cafes")
+                .document(record.cafeId)
+                .get()
+                .addOnSuccessListener { doc ->
+                    cafeName = doc.getString("name")
+                }
+
+            firestore.collection("products")
+                .document(record.productId)
+                .get()
+                .addOnSuccessListener { doc ->
+                    productName = doc.getString("name")
+                }
+        }
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "+${record.pointsAdded} баллов",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (record.isReward) {
+                    Text(
+                        text = "Получена награда!",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                } else {
+                    Text(
+                        text = "Прогресс: ${record.progress}",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+
                 Text(
                     text = dateFormatter.format(record.timestamp),
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            userName?.let { name ->
-                Text(
-                    text = "Пользователь: $name",
-                    fontSize = 14.sp
-                )
-            }
+            Spacer(modifier = Modifier.height(4.dp))
 
-            if (record.description.isNotEmpty()) {
-                Text(
-                    text = record.description,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Text(
+                text = record.description,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            if (isSuperAdmin) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                userName?.let {
+                    Text(
+                        text = "Пользователь: $it",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                cafeName?.let {
+                    Text(
+                        text = "Кафе: $it",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                productName?.let {
+                    Text(
+                        text = "Товар: $it",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
     }

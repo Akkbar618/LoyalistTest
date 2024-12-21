@@ -1,5 +1,6 @@
 package com.example.loyalisttest.main
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,53 +16,95 @@ import com.example.loyalisttest.models.*
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CatalogScreen(navController: NavHostController) {
+    var isSuperAdmin by remember { mutableStateOf(false) }
     var isAdmin by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
+    var cafes by remember { mutableStateOf<Map<String, Cafe>>(emptyMap()) }
     var error by remember { mutableStateOf<String?>(null) }
 
     val currentUser = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
 
-    // Проверяем права админа и загружаем продукты
     LaunchedEffect(currentUser) {
         currentUser?.let { user ->
-            // Проверяем роль пользователя
             firestore.collection("users")
                 .document(user.uid)
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) {
                         error = e.message
+                        Log.e("Firestore", "Listen failed: ${e.message}")
                         return@addSnapshotListener
                     }
 
-                    isAdmin = snapshot?.getString("role") == "ADMIN"
+                    val userRole = snapshot?.getString("role") ?: "USER"
+
+                    // Обновляем состояния в зависимости от роли
+                    isSuperAdmin = userRole == "SUPER_ADMIN"
+                    isAdmin = userRole == "ADMIN"
+
+                    Log.d("Firestore", "User role updated: $userRole, isAdmin: $isAdmin, isSuperAdmin: $isSuperAdmin")
                 }
 
-            // Загружаем продукты в реальном времени
-            firestore.collection("products")
-                .whereEqualTo("active", true)
+            firestore.collection("cafes")
+                .whereEqualTo("isActive", true)
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) {
                         error = e.message
-                        isLoading = false
                         return@addSnapshotListener
                     }
 
-                    products = snapshot?.documents?.mapNotNull { doc ->
-                        try {
-                            doc.toObject(Product::class.java)?.copy(id = doc.id)
-                        } catch (e: Exception) {
-                            null
+                    // Исправлено: создаём пары ключ-значение явно
+                    cafes = snapshot?.documents?.mapNotNull { doc ->
+                        doc.toObject(Cafe::class.java)?.let { cafe ->
+                            Pair(cafe.id, cafe.copy(id = doc.id)) // Создаём Pair
                         }
-                    } ?: emptyList()
-
-                    isLoading = false
+                    }?.toMap() ?: emptyMap()
                 }
+
+            val productQuery = when {
+                isSuperAdmin -> {
+                    // Для супер-админа показываем все продукты
+                    firestore.collection("products").whereEqualTo("active", true)
+                }
+                isAdmin -> {
+                    // Для админа показываем только продукты кафе, которыми он управляет
+                    val managedCafes = firestore.collection("users").document(user.uid).get().await().get("managedCafes") as? List<String> ?: emptyList()
+
+                    if (managedCafes.isNotEmpty()) {
+                        firestore.collection("products")
+                            .whereEqualTo("active", true)
+                            .whereIn("cafeId", managedCafes)
+                    } else {
+                        // Если у админа нет управляемых кафе, не загружаем продукты
+                        null
+                    }
+                }
+                else -> {
+                    // Для пользователя показываем все активные продукты
+                    firestore.collection("products")
+                        .whereEqualTo("active", true)
+                }
+            }
+
+            productQuery?.addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    error = e.message
+                    isLoading = false
+                    return@addSnapshotListener
+                }
+
+                products = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Product::class.java)?.copy(id = doc.id)
+                } ?: emptyList()
+
+                isLoading = false
+            }
         }
     }
 
@@ -70,27 +113,21 @@ fun CatalogScreen(navController: NavHostController) {
             TopAppBar(
                 title = { Text("Каталог") },
                 actions = {
-                    if (isAdmin) {
+                    if (isSuperAdmin) {
                         // Кнопка добавления кафе
-                        IconButton(
-                            onClick = { navController.navigate(NavigationRoutes.AddCafe.route) }
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Добавить кафе",
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
+                        IconButton(onClick = { navController.navigate(NavigationRoutes.AddCafe.route) }) {
+                            Icon(Icons.Default.Add, contentDescription = "Добавить кафе")
                         }
+                    }
+                    if (isSuperAdmin || isAdmin) {
                         // Кнопка добавления товара
-                        IconButton(
-                            onClick = { navController.navigate(NavigationRoutes.AddProduct.route) }
-                        ) {
+                        IconButton(onClick = { navController.navigate(NavigationRoutes.AddProduct.route) }) {
                             Icon(Icons.Default.Add, "Добавить товар")
                         }
                     }
                 }
             )
-        }
+        },
     ) { padding ->
         Box(
             modifier = Modifier
@@ -99,9 +136,7 @@ fun CatalogScreen(navController: NavHostController) {
         ) {
             when {
                 isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 error != null -> {
                     Text(
@@ -132,73 +167,15 @@ fun CatalogScreen(navController: NavHostController) {
                         ) { product ->
                             ProductCard(
                                 product = product,
+                                cafe = cafes[product.cafeId],
                                 isAdmin = isAdmin,
                                 onScanClick = {
-                                    navController.navigate(
-                                        NavigationRoutes.QrScanner.createRoute(product.id)
-                                    )
-                                }
+                                    navController.navigate(NavigationRoutes.QrScanner.createRoute(product.id))
+                                },
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProductCard(
-    product: Product,
-    isAdmin: Boolean,
-    onScanClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = product.name,
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = product.description,
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${product.price} ₽",
-                    style = MaterialTheme.typography.titleSmall
-                )
-
-                Text(
-                    text = "+${product.points} баллов",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            if (isAdmin) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = onScanClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Сканировать QR код")
                 }
             }
         }
