@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LoyalistTest</string>
+
+    <!-- Welcome Screen -->
+    <string name="welcome_title">Лоялист</string>
+    <string name="welcome_subtitle">Все заведения в одном месте\nи под твоим контролем!</string>
+    <string name="welcome_image">Welcome Picture</string>
+    <string name="auth_button">Авторизация</string>
+    <string name="register_button">Регистрация</string>
+
+    <!-- Sign In Screen -->
+    <string name="sign_in_title">Авторизация</string>
+    <string name="email_label">Электронная почта</string>
+    <string name="password_label">Пароль</string>
+    <string name="forgot_password">Забыли пароль?</string>
+    <string name="sign_in_button">Войти</string>
+    <string name="or">или</string>
+    <string name="dont_have_account">Нет аккаунта? </string>
+    <string name="sign_up_link">Зарегистрироваться</string>
+
+    <!-- Sign Up Screen -->
+    <string name="sign_up_title">Регистрация</string>
+    <string name="name_label">Ваше имя</string>
+    <string name="confirm_password_label">Подтвердите пароль</string>
+    <string name="sign_up_button">Создать аккаунт</string>
+    <string name="already_have_account">Уже есть аккаунт? </string>
+    <string name="sign_in_link">Войти</string>
+
+    <!-- Forgot Password Screen -->
+    <string name="forgot_password_title">Забыли пароль?</string>
+    <string name="forgot_password_description">Ничего страшного, такое иногда случается :) Пожалуйста, введите электронную почту, которая привязана к вашему аккаунту.</string>
+    <string name="reset_password_button">Сбросить пароль</string>
+    <string name="remember_password">Помните пароль? </string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_language">Язык приложения</string>
+    <string name="settings_sign_out">Выйти из аккаунта</string>
+    <string name="settings_sign_out_confirmation">Выйти из аккаунта?</string>
+    <string name="settings_sign_out_message">Вы уверены, что хотите выйти из аккаунта?</string>
+    <string name="settings_sign_out_confirm">Выйти</string>
+    <string name="settings_cancel">Отмена</string>
+    <string name="settings_user_section">Профиль пользователя</string>
+    <string name="default_user_name">Пользователь</string>
+
+
+    <string name="home_greeting">Привет,\n%1$s!</string>
+    <string name="home_history">История прогресса</string>
+    <string name="home_your_qr">Ваш QR-код</string>
+    <string name="home_no_progress">У вас пока нет прогресса</string>
+    <string name="home_total_rewards">Получено наград: %1$d</string>
+    <string name="home_progress_count">%1$d из %2$d</string>
+    <string name="home_last_update">Последнее обновление: %1$s</string>
+
+    <!-- Catalog Screen -->
+    <string name="catalog_title">Каталог</string>
+    <string name="catalog_add_cafe">Добавить кафе</string>
+    <string name="catalog_add_product">Добавить товар</string>
+    <string name="catalog_no_products">Нет доступных товаров</string>
+    <string name="catalog_scan_qr">Сканировать QR код</string>
+    <string name="catalog_rewards_received">Получено наград: %1$d</string>
+    <string name="catalog_loading_error">Ошибка загрузки: %1$s</string>
+
+    <!-- Common -->
+    <string name="loading_error">Ошибка: %1$s</string>
+    <string name="points_count">%1$d из %2$d</string>
+
+    <!-- Product Card -->
+    <string name="price_format">%1$.2f ₽</string>
+    <string name="rewards_count">Получено наград: %1$d</string>
+
+    <!-- Add Product -->
+    <string name="select_cafe">Выберите кафе</string>
+    <string name="product_name">Название товара</string>
+    <string name="product_description">Описание</string>
+    <string name="product_scale">Количество делений для награды</string>
+    <string name="product_scale_hint">Сколько покупок нужно для получения награды</string>
+    <string name="product_price">Цена</string>
+    <string name="add_product">Добавить товар</string>
+    <string name="no_cafes_available">Нет доступных кафе</string>
+    <string name="fill_all_fields">Пожалуйста, заполните все поля</string>
+    <string name="success_add_product">Товар успешно добавлен</string>
+
+    <!-- Add Cafe -->
+    <string name="add_cafe">Добавить кафе</string>
+    <string name="cafe_name">Название кафе</string>
+    <string name="cafe_description">Описание</string>
+    <string name="cafe_category">Категория заведения</string>
+    <string name="success_add_cafe">Кафе успешно добавлено</string>
+
+    <!-- QR Scanner -->
+    <string name="scan_qr_title">Сканирование QR-кода</string>
+    <string name="scan_qr_prompt">Отсканируйте QR-код клиента</string>
+    <string name="scan_camera_permission">Для сканирования QR-кода необходим доступ к камере</string>
+    <string name="grant_permission">Предоставить доступ</string>
+    <string name="try_again">Попробовать снова</string>
+    <string name="congratulations">Поздравляем! Клиент получил награду!</string>
+    <string name="progress_updated">Прогресс обновлен!</string>
+</resources>

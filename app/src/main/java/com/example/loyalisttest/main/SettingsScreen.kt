@@ -8,10 +8,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.example.loyalisttest.R
+import com.example.loyalisttest.language.LanguageSwitcher
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,15 +27,14 @@ fun SettingsScreen() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Заголовок
         Text(
-            text = "Настройки",
+            text = stringResource(R.string.settings_title),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
-        // Информация о пользователе
+        // Карточка с информацией о пользователе
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -48,11 +50,11 @@ fun SettingsScreen() {
                 ) {
                     Icon(
                         imageVector = Icons.Default.Person,
-                        contentDescription = "User",
+                        contentDescription = stringResource(R.string.settings_user_section),
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(
-                        text = currentUser?.displayName ?: "Пользователь",
+                        text = currentUser?.displayName ?: stringResource(R.string.default_user_name),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -61,6 +63,25 @@ fun SettingsScreen() {
                     text = currentUser?.email ?: "",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+
+        // Карточка с настройками языка
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_language),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                LanguageSwitcher()
             }
         }
 
@@ -74,32 +95,33 @@ fun SettingsScreen() {
         ) {
             Icon(
                 imageVector = Icons.Default.ExitToApp,
-                contentDescription = "Sign Out",
+                contentDescription = stringResource(R.string.settings_sign_out),
                 modifier = Modifier.padding(end = 8.dp)
             )
-            Text("Выйти из аккаунта")
+            Text(stringResource(R.string.settings_sign_out))
         }
     }
 
-    // Диалог подтверждения выхода
     if (showSignOutDialog) {
         AlertDialog(
             onDismissRequest = { showSignOutDialog = false },
-            title = { Text("Выйти из аккаунта?") },
-            text = { Text("Вы уверены, что хотите выйти из аккаунта?") },
+            title = { Text(stringResource(R.string.settings_sign_out_confirmation)) },
+            text = { Text(stringResource(R.string.settings_sign_out_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         FirebaseAuth.getInstance().signOut()
-                        // Навигация будет обработана в MainScreen
                     }
                 ) {
-                    Text("Выйти", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(R.string.settings_sign_out_confirm),
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSignOutDialog = false }) {
-                    Text("Отмена")
+                    Text(stringResource(R.string.settings_cancel))
                 }
             }
         )

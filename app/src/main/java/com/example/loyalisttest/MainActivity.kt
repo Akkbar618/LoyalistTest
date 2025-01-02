@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.navigation.compose.rememberNavController
 import com.example.loyalisttest.auth.AuthCheck
+import com.example.loyalisttest.language.LocalizedContent
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.example.loyalisttest.navigation.SetupNavGraph
 import com.example.loyalisttest.ui.theme.LoyalistTheme
@@ -20,25 +21,27 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             LoyalistTheme {
-                val navController = rememberNavController()
-                var startDestination by remember {
-                    mutableStateOf<String?>(null)
-                }
+                LocalizedContent {
+                    val navController = rememberNavController()
+                    var startDestination by remember {
+                        mutableStateOf<String?>(null)
+                    }
 
-                if (startDestination == null) {
-                    AuthCheck(
-                        onAuthenticated = { user ->
-                            startDestination = NavigationRoutes.Main.route
-                        },
-                        onNeedAuthentication = {
-                            startDestination = NavigationRoutes.Welcome.route
-                        }
-                    )
-                } else {
-                    SetupNavGraph(
-                        navController = navController,
-                        startDestination = startDestination!!
-                    )
+                    if (startDestination == null) {
+                        AuthCheck(
+                            onAuthenticated = { user ->
+                                startDestination = NavigationRoutes.Main.route
+                            },
+                            onNeedAuthentication = {
+                                startDestination = NavigationRoutes.Welcome.route
+                            }
+                        )
+                    } else {
+                        SetupNavGraph(
+                            navController = navController,
+                            startDestination = startDestination!!
+                        )
+                    }
                 }
             }
         }

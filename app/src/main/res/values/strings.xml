@@ -1,30 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">LoyalistTest</string>
 
-    <string name="welcome_title">Лоялист</string>
-    <string name="welcome_subtitle">Все заведения в одном месте\nи под твоим контролем!</string>
+    <!-- Welcome Screen -->
+    <string name="welcome_title">Loyalist</string>
+    <string name="welcome_subtitle">All places in one app\nunder your control!</string>
     <string name="welcome_image">Welcome Picture</string>
-    <string name="auth_button">Авторизация</string>
-    <string name="register_button">Регистрация</string>
+    <string name="auth_button">Sign In</string>
+    <string name="register_button">Sign Up</string>
 
-    <string name="sign_in_title">Авторизация</string>
-    <string name="email_label">Электронная почта</string>
-    <string name="password_label">Пароль</string>
-    <string name="forgot_password">Забыли пароль?</string>
-    <string name="sign_in_button">Войти</string>
-    <string name="or">или</string>
-    <string name="dont_have_account">Нет аккаунта? </string>
-    <string name="sign_up_link">Зарегистрироваться</string>
+    <!-- Sign In Screen -->
+    <string name="sign_in_title">Sign In</string>
+    <string name="email_label">Email</string>
+    <string name="password_label">Password</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="sign_in_button">Sign In</string>
+    <string name="or">or</string>
+    <string name="dont_have_account">Don\'t have an account? </string>
+    <string name="sign_up_link">Sign Up</string>
 
-    <string name="sign_up_title">Регистрация</string>
-    <string name="name_label">Ваше имя</string>
-    <string name="confirm_password_label">Подтвердите пароль</string>
-    <string name="sign_up_button">Создать аккаунт</string>
-    <string name="already_have_account">Уже есть аккаунт? </string>
-    <string name="sign_in_link">Войти</string>
+    <!-- Sign Up Screen -->
+    <string name="sign_up_title">Sign Up</string>
+    <string name="name_label">Your name</string>
+    <string name="confirm_password_label">Confirm password</string>
+    <string name="sign_up_button">Create Account</string>
+    <string name="already_have_account">Already have an account? </string>
+    <string name="sign_in_link">Sign In</string>
 
-    <string name="forgot_password_title">Забыли пароль?</string>
-    <string name="forgot_password_description">Ничего страшного, такое иногда случается :) Пожалуйста, введите электронную почту, которая привязана к вашему аккаунту.</string>
-    <string name="reset_password_button">Сбросить пароль</string>
-    <string name="remember_password">Помните пароль? </string>
+    <!-- Forgot Password Screen -->
+    <string name="forgot_password_title">Forgot Password?</string>
+    <string name="forgot_password_description">Don\'t worry, it happens sometimes :) Please enter the email associated with your account.</string>
+    <string name="reset_password_button">Reset Password</string>
+    <string name="remember_password">Remember password? </string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Application Language</string>
+    <string name="settings_sign_out">Sign Out</string>
+    <string name="settings_sign_out_confirmation">Sign Out?</string>
+    <string name="settings_sign_out_message">Are you sure you want to sign out?</string>
+    <string name="settings_sign_out_confirm">Sign Out</string>
+    <string name="settings_cancel">Cancel</string>
+    <string name="settings_user_section">User Profile</string>
+    <string name="default_user_name">User</string>
+
+    <!-- Home Screen -->
+    <string name="home_greeting">Hello,\n%1$s!</string>
+    <string name="home_history">Progress History</string>
+    <string name="home_your_qr">Your QR Code</string>
+    <string name="home_no_progress">You don\'t have any progress yet</string>
+    <string name="home_total_rewards">Rewards received: %1$d</string>
+    <string name="home_progress_count">%1$d of %2$d</string>
+    <string name="home_last_update">Last update: %1$s</string>
+
+    <!-- Catalog Screen -->
+    <string name="catalog_title">Catalog</string>
+    <string name="catalog_add_cafe">Add Cafe</string>
+    <string name="catalog_add_product">Add Product</string>
+    <string name="catalog_no_products">No available products</string>
+    <string name="catalog_scan_qr">Scan QR Code</string>
+    <string name="catalog_rewards_received">Rewards received: %1$d</string>
+    <string name="catalog_loading_error">Loading error: %1$s</string>
+
+
+
+
+        <!-- Common -->
+        <string name="loading_error">Error: %1$s</string>
+        <string name="points_count">%1$d of %2$d</string>
+
+        <!-- Product Card -->
+        <string name="price_format">%1$.2f ₽</string>
+        <string name="rewards_count">Rewards received: %1$d</string>
+
+        <!-- Add Product -->
+        <string name="select_cafe">Select cafe</string>
+        <string name="product_name">Product name</string>
+        <string name="product_description">Description</string>
+        <string name="product_scale">Reward scale divisions</string>
+        <string name="product_scale_hint">Number of purchases needed for reward</string>
+        <string name="product_price">Price</string>
+        <string name="add_product">Add Product</string>
+        <string name="no_cafes_available">No available cafes</string>
+        <string name="fill_all_fields">Please fill in all fields</string>
+        <string name="success_add_product">Product added successfully</string>
+
+        <!-- Add Cafe -->
+        <string name="add_cafe">Add Cafe</string>
+        <string name="cafe_name">Cafe name</string>
+        <string name="cafe_description">Description</string>
+        <string name="cafe_category">Cafe category</string>
+        <string name="success_add_cafe">Cafe added successfully</string>
+
+        <!-- QR Scanner -->
+        <string name="scan_qr_title">Scan QR Code</string>
+        <string name="scan_qr_prompt">Scan customer\'s QR code</string>
+        <string name="scan_camera_permission">Camera access is required for QR scanning</string>
+        <string name="grant_permission">Grant Permission</string>
+        <string name="try_again">Try Again</string>
+        <string name="congratulations">Congratulations! Customer received a reward!</string>
+        <string name="progress_updated">Progress updated!</string>
+
 </resources>
