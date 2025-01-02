@@ -140,12 +140,6 @@ fun HomeScreen(navController: NavHostController) {
             }
         }
 
-        
-    }}
 
-
-@Preview
-@Composable
-fun HomeScreen(){
-    Text(text = "tesy)
+    }
 }
