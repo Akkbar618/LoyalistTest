@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -18,6 +19,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import com.example.loyalisttest.R
 import com.example.loyalisttest.models.*
 import kotlinx.coroutines.tasks.await
 
@@ -36,15 +38,15 @@ fun AdminQrScannerScreen(
     val currentUser = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
 
-    // Проверяем роль и загружаем информацию о продукте
+    // Check role and load product information
     LaunchedEffect(currentUser, productId) {
         try {
             if (currentUser == null) {
-                errorMessage = "Необходима авторизация"
+                errorMessage = context.getString(R.string.error_auth_required)
                 return@LaunchedEffect
             }
 
-            // Проверяем роль пользователя
+            // Check user role
             val userDoc = firestore.collection("users")
                 .document(currentUser.uid)
                 .get()
@@ -52,11 +54,11 @@ fun AdminQrScannerScreen(
 
             userRole = userDoc.getString("role")
             if (userRole != UserRole.SUPER_ADMIN.name && userRole != UserRole.ADMIN.name) {
-                errorMessage = "Недостаточно прав для сканирования"
+                errorMessage = context.getString(R.string.error_insufficient_rights_scan)
                 return@LaunchedEffect
             }
 
-            // Загружаем продукт
+            // Load product
             val productDoc = firestore.collection("products")
                 .document(productId)
                 .get()
@@ -64,20 +66,20 @@ fun AdminQrScannerScreen(
 
             product = productDoc.toObject(Product::class.java)?.copy(id = productId)
 
-            // Проверяем права на управление кафе для админа
+            // Check admin permissions for cafe management
             if (userRole == UserRole.ADMIN.name) {
                 val managedCafes = userDoc.get("managedCafes") as? List<String> ?: emptyList()
                 if (!managedCafes.contains(product?.cafeId)) {
-                    errorMessage = "У вас нет прав на управление этим кафе"
+                    errorMessage = context.getString(R.string.error_no_cafe_management_rights)
                     return@LaunchedEffect
                 }
             }
         } catch (e: Exception) {
-            errorMessage = "Ошибка: ${e.message}"
+            errorMessage = context.getString(R.string.error_generic, e.message ?: "")
         }
     }
 
-    // Обработчик результата сканирования
+    // Scan result handler
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         if (result.contents == null) {
             navController.popBackStack()
@@ -89,7 +91,7 @@ fun AdminQrScannerScreen(
         val scannedUserId = result.contents
 
         product?.let { p ->
-            // Получаем или создаем документ с прогрессом пользователя
+            // Get or create user progress document
             val userPointsRef = firestore.collection("userPoints")
                 .document("${scannedUserId}_${p.cafeId}_${p.id}")
 
@@ -99,7 +101,7 @@ fun AdminQrScannerScreen(
                 val totalScans = userPointsDoc.getLong("totalScans")?.toInt() ?: 0
                 val rewardsReceived = userPointsDoc.getLong("rewardsReceived")?.toInt() ?: 0
 
-                // Увеличиваем прогресс
+                // Increase progress
                 val newProgress = currentProgress + 1
                 val rewardAchieved = newProgress >= p.scaleSize
                 val finalProgress = if (rewardAchieved) 0 else newProgress
@@ -116,7 +118,7 @@ fun AdminQrScannerScreen(
 
                 transaction.set(userPointsRef, pointsData)
 
-                // Создаем запись в истории
+                // Create history record
                 val historyRef = firestore.collection("pointsHistory").document()
                 val historyData = hashMapOf(
                     "id" to historyRef.id,
@@ -124,7 +126,7 @@ fun AdminQrScannerScreen(
                     "adminId" to currentUser?.uid,
                     "cafeId" to p.cafeId,
                     "productId" to p.id,
-                    "description" to "Отметка за ${p.name}",
+                    "description" to context.getString(R.string.mark_for_product, p.name),
                     "timestamp" to System.currentTimeMillis(),
                     "progress" to finalProgress,
                     "isReward" to rewardAchieved
@@ -137,24 +139,24 @@ fun AdminQrScannerScreen(
                 if (rewardAchieved) {
                     Toast.makeText(
                         context,
-                        "Поздравляем! Клиент получил награду!",
+                        context.getString(R.string.congratulations),
                         Toast.LENGTH_LONG
                     ).show()
                 }
                 Toast.makeText(
                     context,
-                    "Прогресс обновлен!",
+                    context.getString(R.string.progress_updated),
                     Toast.LENGTH_SHORT
                 ).show()
                 navController.popBackStack()
             }.addOnFailureListener { e ->
-                errorMessage = "Ошибка при обновлении прогресса: ${e.message}"
+                errorMessage = context.getString(R.string.error_updating_progress, e.message ?: "")
                 isLoading = false
             }
         }
     }
 
-    // Запрашиваем разрешение на использование камеры
+    // Request camera permission
     @OptIn(ExperimentalPermissionsApi::class)
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
@@ -162,7 +164,7 @@ fun AdminQrScannerScreen(
         if (cameraPermissionState.status.isGranted) {
             val options = ScanOptions()
                 .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                .setPrompt("Отсканируйте QR-код пользователя")
+                .setPrompt(context.getString(R.string.scan_qr_prompt))
                 .setBeepEnabled(false)
                 .setCameraId(0)
             scanLauncher.launch(options)
@@ -192,7 +194,7 @@ fun AdminQrScannerScreen(
                                 errorMessage = null
                                 val options = ScanOptions()
                                     .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                    .setPrompt("Отсканируйте QR-код пользователя")
+                                    .setPrompt(context.getString(R.string.scan_qr_prompt))
                                     .setBeepEnabled(false)
                                     .setCameraId(0)
                                 scanLauncher.launch(options)
@@ -201,7 +203,7 @@ fun AdminQrScannerScreen(
                             }
                         }
                     ) {
-                        Text("Попробовать снова")
+                        Text(stringResource(R.string.try_again))
                     }
                 }
             }
@@ -210,11 +212,11 @@ fun AdminQrScannerScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Для сканирования QR-кода необходим доступ к камере")
+                    Text(stringResource(R.string.scan_camera_permission))
                     Button(
                         onClick = { cameraPermissionState.launchPermissionRequest() }
                     ) {
-                        Text("Предоставить доступ")
+                        Text(stringResource(R.string.grant_permission))
                     }
                 }
             }

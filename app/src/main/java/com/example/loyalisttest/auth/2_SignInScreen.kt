@@ -49,7 +49,7 @@ fun SignInScreen(
             .get()
             .addOnSuccessListener { document ->
                 if (!document.exists()) {
-                    // Создаем профиль, если его нет
+                    // Create profile if it doesn't exist
                     val userProfile = hashMapOf(
                         "userId" to userId,
                         "email" to email,
@@ -63,21 +63,21 @@ fun SignInScreen(
                         .document(userId)
                         .set(userProfile)
                         .addOnSuccessListener {
-                            Log.d("SignInScreen", "Профиль пользователя создан")
+                            Log.d("SignInScreen", "User profile created")
                         }
                         .addOnFailureListener { e ->
-                            Log.e("SignInScreen", "Ошибка создания профиля", e)
+                            Log.e("SignInScreen", "Error creating profile", e)
                         }
                 }
             }
             .addOnFailureListener { e ->
-                Log.e("SignInScreen", "Ошибка проверки профиля", e)
+                Log.e("SignInScreen", "Error checking profile", e)
             }
     }
 
     fun handleSignIn(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
-            Toast.makeText(context, "Заполните все поля", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.error_fill_all_fields), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -94,14 +94,14 @@ fun SignInScreen(
                 Log.d("SignInScreen", "Sign in task completed. Success: ${task.isSuccessful}")
 
                 if (task.isSuccessful) {
-                    // Проверяем и создаем профиль пользователя если необходимо
+                    // Check and create user profile if needed
                     auth.currentUser?.uid?.let { userId ->
                         firestore.collection("users")
                             .document(userId)
                             .get()
                             .addOnSuccessListener { document ->
                                 if (!document.exists()) {
-                                    // Создаем профиль, если его нет
+                                    // Create profile if it doesn't exist
                                     val userProfile = hashMapOf(
                                         "userId" to userId,
                                         "email" to email,
@@ -116,28 +116,36 @@ fun SignInScreen(
                                         .document(userId)
                                         .set(userProfile)
                                         .addOnSuccessListener {
-                                            Log.d("SignInScreen", "Профиль пользователя создан")
+                                            Log.d("SignInScreen", "User profile created")
                                             isLoading = false
-                                            Toast.makeText(context, "Успешная авторизация", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, context.getString(R.string.success_auth), Toast.LENGTH_SHORT).show()
                                             onSignInClick(email, password)
                                         }
                                         .addOnFailureListener { e ->
-                                            Log.e("SignInScreen", "Ошибка создания профиля", e)
+                                            Log.e("SignInScreen", "Error creating profile", e)
                                             isLoading = false
-                                            Toast.makeText(context, "Ошибка создания профиля: ${e.message}", Toast.LENGTH_LONG).show()
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.error_profile_creation, e.message ?: ""),
+                                                Toast.LENGTH_LONG
+                                            ).show()
                                         }
                                 } else {
-                                    // Профиль существует, можно продолжать
-                                    Log.d("SignInScreen", "Профиль пользователя существует")
+                                    // Profile exists, continue
+                                    Log.d("SignInScreen", "User profile exists")
                                     isLoading = false
-                                    Toast.makeText(context, "Успешная авторизация", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.success_auth), Toast.LENGTH_SHORT).show()
                                     onSignInClick(email, password)
                                 }
                             }
                             .addOnFailureListener { e ->
-                                Log.e("SignInScreen", "Ошибка проверки профиля", e)
+                                Log.e("SignInScreen", "Error checking profile", e)
                                 isLoading = false
-                                Toast.makeText(context, "Ошибка проверки профиля: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.error_profile_check, e.message ?: ""),
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                     }
                 } else {
@@ -145,7 +153,7 @@ fun SignInScreen(
                     isLoading = false
                     Toast.makeText(
                         context,
-                        task.exception?.message ?: "Ошибка авторизации",
+                        task.exception?.message ?: context.getString(R.string.error_auth),
                         Toast.LENGTH_LONG
                     ).show()
                 }

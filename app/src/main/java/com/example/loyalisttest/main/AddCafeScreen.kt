@@ -9,11 +9,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import android.widget.Toast
+import com.example.loyalisttest.R
 import com.example.loyalisttest.models.CafeCategory
 import com.example.loyalisttest.models.UserRole
 import kotlinx.coroutines.tasks.await
@@ -36,11 +38,11 @@ fun AddCafeScreen(
     val firestore = FirebaseFirestore.getInstance()
     val currentUser = FirebaseAuth.getInstance().currentUser
 
-    // Проверяем права доступа при загрузке экрана
+    // Check access rights when loading screen
     LaunchedEffect(currentUser) {
         try {
             if (currentUser == null) {
-                error = "Необходима авторизация"
+                error = context.getString(R.string.error_auth_required)
                 return@LaunchedEffect
             }
 
@@ -51,10 +53,10 @@ fun AddCafeScreen(
 
             isSuperAdmin = userDoc.getString("role") == UserRole.SUPER_ADMIN.name
             if (!isSuperAdmin) {
-                error = "Недостаточно прав для создания кафе"
+                error = context.getString(R.string.error_insufficient_rights_cafe)
             }
         } catch (e: Exception) {
-            error = "Ошибка проверки прав: ${e.message}"
+            error = context.getString(R.string.error_checking_rights, e.message ?: "")
         } finally {
             isLoading = false
         }
@@ -63,11 +65,11 @@ fun AddCafeScreen(
     fun validateInputs(): Boolean {
         return when {
             name.isBlank() -> {
-                error = "Введите название кафе"
+                error = context.getString(R.string.error_enter_cafe_name)
                 false
             }
             description.isBlank() -> {
-                error = "Введите описание"
+                error = context.getString(R.string.error_enter_description)
                 false
             }
             else -> true
@@ -77,11 +79,11 @@ fun AddCafeScreen(
     fun addCafe() {
         if (!validateInputs()) return
         if (!isSuperAdmin) {
-            error = "Недостаточно прав для создания кафе"
+            error = context.getString(R.string.error_insufficient_rights_cafe)
             return
         }
         if (currentUser == null) {
-            error = "Необходима авторизация"
+            error = context.getString(R.string.error_auth_required)
             return
         }
 
@@ -101,16 +103,16 @@ fun AddCafeScreen(
             .addOnSuccessListener { docRef ->
                 docRef.update(mapOf("id" to docRef.id))
                     .addOnSuccessListener {
-                        Toast.makeText(context, "Кафе успешно добавлено", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.success_add_cafe), Toast.LENGTH_SHORT).show()
                         navController.popBackStack()
                     }
                     .addOnFailureListener { e ->
-                        error = "Ошибка обновления ID кафе: ${e.message}"
+                        error = context.getString(R.string.error_updating_cafe_id, e.message ?: "")
                         isLoading = false
                     }
             }
             .addOnFailureListener { e ->
-                error = "Ошибка при добавлении кафе: ${e.message}"
+                error = context.getString(R.string.error_adding_cafe, e.message ?: "")
                 isLoading = false
             }
     }
@@ -118,10 +120,10 @@ fun AddCafeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Добавить кафе") },
+                title = { Text(stringResource(R.string.add_cafe)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Назад")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -144,7 +146,7 @@ fun AddCafeScreen(
                 contentAlignment = androidx.compose.ui.Alignment.Center
             ) {
                 Text(
-                    text = "Недостаточно прав для создания кафе",
+                    text = stringResource(R.string.error_insufficient_rights_cafe),
                     color = MaterialTheme.colorScheme.error
                 )
             }
@@ -160,7 +162,7 @@ fun AddCafeScreen(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Название кафе") },
+                    label = { Text(stringResource(R.string.cafe_name)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     enabled = !isLoading
@@ -169,7 +171,7 @@ fun AddCafeScreen(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Описание") },
+                    label = { Text(stringResource(R.string.cafe_description)) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     enabled = !isLoading
@@ -183,7 +185,7 @@ fun AddCafeScreen(
                         value = selectedCategory.displayName,
                         onValueChange = { },
                         readOnly = true,
-                        label = { Text("Категория заведения") },
+                        label = { Text(stringResource(R.string.cafe_category)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(),
@@ -226,7 +228,7 @@ fun AddCafeScreen(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Text("Добавить кафе")
+                        Text(stringResource(R.string.add_cafe))
                     }
                 }
             }

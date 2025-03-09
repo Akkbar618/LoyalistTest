@@ -6,10 +6,12 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import com.example.loyalisttest.R
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.example.loyalisttest.ui.theme.Transitions
 import com.google.firebase.auth.FirebaseAuth
@@ -38,14 +40,29 @@ fun MainScreen(navController: NavHostController) {
     val navBackStackEntry by mainNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // Bottom navigation items
+    val navItems = listOf(
+        Triple(
+            NavigationRoutes.Home.route,
+            stringResource(R.string.nav_home),
+            Icons.Default.Home
+        ),
+        Triple(
+            NavigationRoutes.Catalog.route,
+            stringResource(R.string.nav_catalog),
+            Icons.Default.List
+        ),
+        Triple(
+            NavigationRoutes.Settings.route,
+            stringResource(R.string.nav_settings),
+            Icons.Default.Settings
+        )
+    )
+
     Scaffold(
         bottomBar = {
             NavigationBar {
-                listOf(
-                    Triple(NavigationRoutes.Home.route, "Главная", Icons.Default.Home),
-                    Triple(NavigationRoutes.Catalog.route, "Каталог", Icons.Default.List),
-                    Triple(NavigationRoutes.Settings.route, "Настройки", Icons.Default.Settings)
-                ).forEach { (route, title, icon) ->
+                navItems.forEach { (route, title, icon) ->
                     NavigationBarItem(
                         icon = { Icon(icon, contentDescription = title) },
                         label = { Text(title) },
@@ -71,7 +88,7 @@ fun MainScreen(navController: NavHostController) {
             startDestination = NavigationRoutes.Home.route,
             modifier = Modifier.padding(paddingValues)
         ) {
-            // Базовые экраны
+            // Base screens
             composable(
                 route = NavigationRoutes.Home.route,
                 enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
@@ -96,7 +113,7 @@ fun MainScreen(navController: NavHostController) {
                 SettingsScreen()
             }
 
-            // История баллов
+            // Points history
             composable(
                 route = NavigationRoutes.PointsHistory.route,
                 enterTransition = { Transitions.enterScale() },
@@ -105,7 +122,7 @@ fun MainScreen(navController: NavHostController) {
                 PointsHistoryScreen(mainNavController)
             }
 
-            // Добавление кафе и товаров
+            // Adding cafe and products
             composable(
                 route = NavigationRoutes.AddCafe.route,
                 enterTransition = { Transitions.enterScale() },
@@ -122,7 +139,7 @@ fun MainScreen(navController: NavHostController) {
                 AddProductScreen(mainNavController)
             }
 
-            // QR-код и сканирование
+            // QR code and scanning
             composable(
                 route = NavigationRoutes.QrCodeFullscreen.route,
                 enterTransition = { Transitions.enterScale() },

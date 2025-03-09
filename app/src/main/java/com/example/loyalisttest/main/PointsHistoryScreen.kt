@@ -9,10 +9,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.loyalisttest.R
 import com.example.loyalisttest.models.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -33,34 +36,35 @@ fun PointsHistoryScreen(
 
     val currentUser = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
+    val context = LocalContext.current
 
-    // Загрузка истории
+    // Load history
     LaunchedEffect(currentUser) {
         if (currentUser == null) {
-            errorMessage = "Пользователь не авторизован"
+            errorMessage = context.getString(R.string.error_user_not_authenticated)
             isLoading = false
             return@LaunchedEffect
         }
 
-        // Проверяем роль пользователя
+        // Check user role
         firestore.collection("users")
             .document(currentUser.uid)
             .get()
             .addOnSuccessListener { userDoc ->
                 currentUserRole = userDoc.getString("role")
 
-                // В зависимости от роли формируем запрос
+                // Form query based on role
                 val query = when (currentUserRole) {
                     UserRole.SUPER_ADMIN.name -> {
-                        // Супер-админ видит всю историю
+                        // Super admin sees all history
                         firestore.collection("pointsHistory")
                             .orderBy("timestamp", Query.Direction.DESCENDING)
                     }
                     UserRole.ADMIN.name -> {
-                        // Админ видит историю своих кафе
+                        // Admin sees history of their cafes
                         val managedCafes = userDoc.get("managedCafes") as? List<String> ?: emptyList()
                         if (managedCafes.isEmpty()) {
-                            errorMessage = "У вас нет прикрепленных кафе"
+                            errorMessage = context.getString(R.string.error_no_managed_cafes)
                             isLoading = false
                             return@addOnSuccessListener
                         }
@@ -69,7 +73,7 @@ fun PointsHistoryScreen(
                             .orderBy("timestamp", Query.Direction.DESCENDING)
                     }
                     else -> {
-                        // Обычный пользователь видит только свою историю
+                        // Regular user sees only their history
                         firestore.collection("pointsHistory")
                             .whereEqualTo("userId", currentUser.uid)
                             .orderBy("timestamp", Query.Direction.DESCENDING)
@@ -78,7 +82,7 @@ fun PointsHistoryScreen(
 
                 query.addSnapshotListener { snapshot, e ->
                     if (e != null) {
-                        errorMessage = "Ошибка загрузки истории: ${e.message}"
+                        errorMessage = context.getString(R.string.error_loading_history, e.message ?: "")
                         isLoading = false
                         return@addSnapshotListener
                     }
@@ -91,7 +95,7 @@ fun PointsHistoryScreen(
                 }
             }
             .addOnFailureListener { e ->
-                errorMessage = "Ошибка проверки прав: ${e.message}"
+                errorMessage = context.getString(R.string.error_checking_rights, e.message ?: "")
                 isLoading = false
             }
     }
@@ -99,10 +103,10 @@ fun PointsHistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("История прогресса") },
+                title = { Text(stringResource(R.string.history_title)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Назад")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -129,7 +133,7 @@ fun PointsHistoryScreen(
                 }
                 historyRecords.isEmpty() -> {
                     Text(
-                        text = "История пуста",
+                        text = stringResource(R.string.history_empty),
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(16.dp)
@@ -168,18 +172,19 @@ private fun HistoryRecordCard(
 
     val firestore = FirebaseFirestore.getInstance()
     val dateFormatter = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
+    val context = LocalContext.current
 
-    // Загружаем дополнительную информацию
+    // Load additional information
     LaunchedEffect(record) {
-        // Загружаем имя пользователя
+        // Load user name
         firestore.collection("users")
             .document(record.userId)
             .get()
             .addOnSuccessListener { doc ->
-                userName = doc.getString("name") ?: "Неизвестный пользователь"
+                userName = doc.getString("name") ?: context.getString(R.string.unknown_user)
             }
 
-        // Если супер-админ, загружаем информацию о кафе и товаре
+        // If super admin, load cafe and product info
         if (isSuperAdmin) {
             firestore.collection("cafes")
                 .document(record.cafeId)
@@ -211,13 +216,13 @@ private fun HistoryRecordCard(
             ) {
                 if (record.isReward) {
                     Text(
-                        text = "Получена награда!",
+                        text = stringResource(R.string.reward_received),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                 } else {
                     Text(
-                        text = "Прогресс: ${record.progress}",
+                        text = stringResource(R.string.progress_count, record.progress),
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
@@ -241,21 +246,21 @@ private fun HistoryRecordCard(
 
                 userName?.let {
                     Text(
-                        text = "Пользователь: $it",
+                        text = stringResource(R.string.history_user_label, it),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
 
                 cafeName?.let {
                     Text(
-                        text = "Кафе: $it",
+                        text = stringResource(R.string.history_cafe_label, it),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
 
                 productName?.let {
                     Text(
-                        text = "Товар: $it",
+                        text = stringResource(R.string.history_product_label, it),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

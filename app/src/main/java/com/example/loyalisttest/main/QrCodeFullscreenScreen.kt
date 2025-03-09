@@ -14,8 +14,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.loyalisttest.R
 import com.example.loyalisttest.utils.QrCodeGenerator
 import com.google.firebase.auth.FirebaseAuth
 
@@ -50,7 +52,7 @@ fun QrCodeFullscreenScreen(navController: NavHostController) {
         } else if (qrCodeBitmap != null) {
             Image(
                 bitmap = qrCodeBitmap!!.asImageBitmap(),
-                contentDescription = "QR Code Fullscreen",
+                contentDescription = stringResource(R.string.qr_code_fullscreen),
                 modifier = Modifier
                     .size(300.dp)
                     .clip(RoundedCornerShape(24.dp))

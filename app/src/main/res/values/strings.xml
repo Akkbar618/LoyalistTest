@@ -18,6 +18,11 @@
     <string name="or">or</string>
     <string name="dont_have_account">Don\'t have an account? </string>
     <string name="sign_up_link">Sign Up</string>
+    <string name="error_fill_all_fields">Please fill in all fields</string>
+    <string name="success_auth">Authentication successful</string>
+    <string name="error_profile_creation">Error creating profile: %1$s</string>
+    <string name="error_profile_check">Error checking profile: %1$s</string>
+    <string name="error_auth">Authentication failed</string>
 
     <!-- Sign Up Screen -->
     <string name="sign_up_title">Sign Up</string>
@@ -26,12 +31,22 @@
     <string name="sign_up_button">Create Account</string>
     <string name="already_have_account">Already have an account? </string>
     <string name="sign_in_link">Sign In</string>
+    <string name="error_enter_name">Please enter your name</string>
+    <string name="error_enter_email">Please enter your email</string>
+    <string name="error_enter_password">Please enter your password</string>
+    <string name="error_confirm_password">Please confirm your password</string>
+    <string name="error_passwords_dont_match">Passwords don\'t match</string>
+    <string name="error_password_too_short">Password must be at least 6 characters</string>
+    <string name="registration_success">Registration successful</string>
+    <string name="registration_error">Registration error: %1$s</string>
 
     <!-- Forgot Password Screen -->
     <string name="forgot_password_title">Forgot Password?</string>
     <string name="forgot_password_description">Don\'t worry, it happens sometimes :) Please enter the email associated with your account.</string>
     <string name="reset_password_button">Reset Password</string>
     <string name="remember_password">Remember password? </string>
+    <string name="reset_instructions_sent">Password reset instructions have been sent to your email</string>
+    <string name="error_sending_email">Error sending email: %1$s</string>
 
     <!-- Settings Screen -->
     <string name="settings_title">Settings</string>
@@ -62,43 +77,89 @@
     <string name="catalog_rewards_received">Rewards received: %1$d</string>
     <string name="catalog_loading_error">Loading error: %1$s</string>
 
+    <!-- Common -->
+    <string name="loading_error">Error: %1$s</string>
 
+    <!-- Product Card -->
+    <string name="price_format">%1$.2f ₽</string>
+    <string name="points_count">%1$d of %2$d</string>
+    <string name="rewards_count">Rewards received: %1$d</string>
 
+    <!-- Add Product -->
+    <string name="select_cafe">Select cafe</string>
+    <string name="product_name">Product name</string>
+    <string name="product_description">Description</string>
+    <string name="product_scale">Reward scale divisions</string>
+    <string name="product_scale_hint">Number of purchases needed for reward</string>
+    <string name="product_price">Price</string>
+    <string name="add_product">Add Product</string>
+    <string name="no_cafes_available">No available cafes</string>
+    <string name="fill_all_fields">Please fill in all fields</string>
+    <string name="success_add_product">Product added successfully</string>
+    <string name="error_no_managed_cafes">You don\'t have any assigned cafes</string>
+    <string name="error_insufficient_rights_product">Insufficient rights to add products</string>
+    <string name="error_no_cafes">No available cafes</string>
+    <string name="error_loading_cafes">Error loading cafes list: %1$s</string>
+    <string name="error_select_cafe">Please select a cafe</string>
+    <string name="error_enter_product_name">Enter product name</string>
+    <string name="error_scale_size">Scale divisions must be greater than 0</string>
+    <string name="error_enter_valid_price">Enter a valid price</string>
+    <string name="error_updating_product_id">Error updating product ID: %1$s</string>
+    <string name="error_adding_product">Error adding product: %1$s</string>
+    <string name="error_no_rights_for_cafe">You don\'t have permission to add products to this cafe</string>
 
-        <!-- Common -->
-        <string name="loading_error">Error: %1$s</string>
-        <string name="points_count">%1$d of %2$d</string>
+    <!-- Add Cafe -->
+    <string name="add_cafe">Add Cafe</string>
+    <string name="cafe_name">Cafe name</string>
+    <string name="cafe_description">Description</string>
+    <string name="cafe_category">Cafe category</string>
+    <string name="success_add_cafe">Cafe added successfully</string>
+    <string name="error_auth_required">Authentication required</string>
+    <string name="error_insufficient_rights_cafe">Insufficient rights to create a cafe</string>
+    <string name="error_checking_rights">Error checking rights: %1$s</string>
+    <string name="error_enter_cafe_name">Enter cafe name</string>
+    <string name="error_enter_description">Enter description</string>
+    <string name="error_updating_cafe_id">Error updating cafe ID: %1$s</string>
+    <string name="error_adding_cafe">Error adding cafe: %1$s</string>
+    <string name="back">Back</string>
 
-        <!-- Product Card -->
-        <string name="price_format">%1$.2f ₽</string>
-        <string name="rewards_count">Rewards received: %1$d</string>
+    <!-- QR Scanner -->
+    <string name="scan_qr_title">Scan QR Code</string>
+    <string name="scan_qr_prompt">Scan customer\'s QR code</string>
+    <string name="scan_camera_permission">Camera access is required for QR scanning</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="try_again">Try Again</string>
+    <string name="congratulations">Congratulations! Customer received a reward!</string>
+    <string name="progress_updated">Progress updated!</string>
+    <string name="error_loading_data">Error loading data: %1$s</string>
+    <string name="error_insufficient_rights_points">Insufficient rights for adding points</string>
 
-        <!-- Add Product -->
-        <string name="select_cafe">Select cafe</string>
-        <string name="product_name">Product name</string>
-        <string name="product_description">Description</string>
-        <string name="product_scale">Reward scale divisions</string>
-        <string name="product_scale_hint">Number of purchases needed for reward</string>
-        <string name="product_price">Price</string>
-        <string name="add_product">Add Product</string>
-        <string name="no_cafes_available">No available cafes</string>
-        <string name="fill_all_fields">Please fill in all fields</string>
-        <string name="success_add_product">Product added successfully</string>
+    <!-- Admin QR Scanner -->
+    <string name="error_insufficient_rights_scan">Insufficient rights for scanning</string>
+    <string name="error_no_cafe_management_rights">You don\'t have rights to manage this cafe</string>
+    <string name="error_generic">Error: %1$s</string>
+    <string name="mark_for_product">Mark for %1$s</string>
+    <string name="error_updating_progress">Error updating progress: %1$s</string>
 
-        <!-- Add Cafe -->
-        <string name="add_cafe">Add Cafe</string>
-        <string name="cafe_name">Cafe name</string>
-        <string name="cafe_description">Description</string>
-        <string name="cafe_category">Cafe category</string>
-        <string name="success_add_cafe">Cafe added successfully</string>
+    <!-- Main Screen -->
+    <string name="nav_home">Home</string>
+    <string name="nav_catalog">Catalog</string>
+    <string name="nav_settings">Settings</string>
 
-        <!-- QR Scanner -->
-        <string name="scan_qr_title">Scan QR Code</string>
-        <string name="scan_qr_prompt">Scan customer\'s QR code</string>
-        <string name="scan_camera_permission">Camera access is required for QR scanning</string>
-        <string name="grant_permission">Grant Permission</string>
-        <string name="try_again">Try Again</string>
-        <string name="congratulations">Congratulations! Customer received a reward!</string>
-        <string name="progress_updated">Progress updated!</string>
+    <!-- Points History Screen -->
+    <string name="history_title">Progress History</string>
+    <string name="error_user_not_authenticated">User not authenticated</string>
+    <string name="error_loading_history">Error loading history: %1$s</string>
+    <string name="history_empty">History is empty</string>
+    <string name="unknown_user">Unknown user</string>
+    <string name="reward_received">Reward received!</string>
+    <string name="progress_count">Progress: %1$d</string>
+    <string name="history_user_label">User: %1$s</string>
+    <string name="history_cafe_label">Cafe: %1$s</string>
+    <string name="history_product_label">Product: %1$s</string>
+
+    <!-- Full QR Code Screen -->
+    <string name="qr_code_fullscreen">QR Code Fullscreen</string>
+
 
 </resources>

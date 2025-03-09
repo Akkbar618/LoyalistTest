@@ -10,16 +10,16 @@ class LoyalistApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // Инициализация Firebase
+        // Initialize language first to ensure proper localization
+        LanguageManager.init(this)
+
+        // Initialize Firebase
         FirebaseApp.initializeApp(this)
 
-        // Настройка Firestore
+        // Configure Firestore
         val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
             .build()
         FirebaseFirestore.getInstance().firestoreSettings = settings
-
-        // Инициализация менеджера языков
-        LanguageManager.init(this)
     }
 }

@@ -37,7 +37,7 @@ fun ForgotPasswordScreen(
 
     fun handleResetPassword(email: String) {
         if (email.isBlank()) {
-            Toast.makeText(context, "Введите email", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.error_enter_email), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -46,18 +46,18 @@ fun ForgotPasswordScreen(
             .addOnCompleteListener { task ->
                 isLoading = false
                 if (task.isSuccessful) {
-                    Log.d("ForgotPasswordScreen", "Письмо для сброса пароля отправлено")
+                    Log.d("ForgotPasswordScreen", "Password reset email sent")
                     Toast.makeText(
                         context,
-                        "Инструкции для сброса пароля отправлены на ваш email",
+                        context.getString(R.string.reset_instructions_sent),
                         Toast.LENGTH_LONG
                     ).show()
                     onSignInClick()
                 } else {
-                    Log.e("ForgotPasswordScreen", "Ошибка отправки письма", task.exception)
+                    Log.e("ForgotPasswordScreen", "Failed to send email", task.exception)
                     Toast.makeText(
                         context,
-                        "Ошибка отправки письма: ${task.exception?.message}",
+                        context.getString(R.string.error_sending_email, task.exception?.message ?: ""),
                         Toast.LENGTH_LONG
                     ).show()
                 }

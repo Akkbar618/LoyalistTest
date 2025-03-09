@@ -1,18 +1,18 @@
 package com.example.loyalisttest.language
 
+import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.os.Build
 import android.os.LocaleList
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.os.ConfigurationCompat
-import com.example.loyalisttest.MainActivity
 import com.example.loyalisttest.R
 import java.util.*
 
@@ -37,25 +37,30 @@ object LanguageManager {
 
     fun init(context: Context) {
         preferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        val savedLanguage = preferences.getString(KEY_LANGUAGE, getSystemLanguage(context).code)
-        _currentLanguage.value = AppLanguage.fromCode(savedLanguage ?: AppLanguage.RUSSIAN.code)
+        val savedLanguage = preferences.getString(KEY_LANGUAGE, null) ?: getSystemLanguageCode(context)
+        _currentLanguage.value = AppLanguage.fromCode(savedLanguage)
+
+        // Apply the saved language configuration
         updateResources(context, _currentLanguage.value)
     }
 
-    fun setLanguage(language: AppLanguage, context: Context) {
+    fun setLanguage(language: AppLanguage, context: Context): Boolean {
+        if (_currentLanguage.value == language) return false
+
         preferences.edit().putString(KEY_LANGUAGE, language.code).apply()
         _currentLanguage.value = language
         updateResources(context, language)
-
-        // Пересоздаем контекст для обновления ресурсов
-        if (context is MainActivity) {
-            context.recreate()
-        }
+        return true
     }
 
-    private fun getSystemLanguage(context: Context): AppLanguage {
-        val locale = ConfigurationCompat.getLocales(context.resources.configuration).get(0)
-        return AppLanguage.values().find { it.code == locale?.language } ?: AppLanguage.ENGLISH
+    private fun getSystemLanguageCode(context: Context): String {
+        val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            context.resources.configuration.locales.get(0)
+        } else {
+            @Suppress("DEPRECATION")
+            context.resources.configuration.locale
+        }
+        return locale?.language ?: "en"
     }
 
     private fun updateResources(context: Context, language: AppLanguage) {
@@ -63,46 +68,36 @@ object LanguageManager {
         Locale.setDefault(locale)
 
         val config = context.resources.configuration
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            config.setLocales(LocaleList(locale))
+            val localeList = LocaleList(locale)
+            config.setLocales(localeList)
         } else {
             @Suppress("DEPRECATION")
             config.locale = locale
         }
 
-        context.createConfigurationContext(config)
         context.resources.updateConfiguration(config, context.resources.displayMetrics)
     }
 }
 
 @Composable
 fun LocalizedContent(content: @Composable () -> Unit) {
-    val configuration = LocalConfiguration.current
-    val context = LocalContext.current
+    // This is now a more lightweight wrapper that just observes language changes
+    val currentLanguage by LanguageManager.currentLanguage
 
-    DisposableEffect(LanguageManager.currentLanguage.value) {
-        val locale = Locale(LanguageManager.currentLanguage.value.code)
-        Locale.setDefault(locale)
-
-        val config = configuration.apply {
-            setLocale(locale)
-        }
-
-        context.createConfigurationContext(config)
-        context.resources.updateConfiguration(config, context.resources.displayMetrics)
-
-        onDispose { }
-    }
-
+    // The actual content
     content()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LanguageSwitcher(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLanguageChanged: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val currentLanguage by LanguageManager.currentLanguage
     var isDropdownExpanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
@@ -111,7 +106,7 @@ fun LanguageSwitcher(
         modifier = modifier
     ) {
         OutlinedTextField(
-            value = LanguageManager.currentLanguage.value.displayName,
+            value = currentLanguage.displayName,
             onValueChange = { },
             readOnly = true,
             label = { Text(stringResource(R.string.settings_language)) },
@@ -129,7 +124,12 @@ fun LanguageSwitcher(
                 DropdownMenuItem(
                     text = { Text(language.displayName) },
                     onClick = {
-                        LanguageManager.setLanguage(language, context)
+                        if (language != currentLanguage) {
+                            val changed = LanguageManager.setLanguage(language, context)
+                            if (changed) {
+                                onLanguageChanged()
+                            }
+                        }
                         isDropdownExpanded = false
                     }
                 )

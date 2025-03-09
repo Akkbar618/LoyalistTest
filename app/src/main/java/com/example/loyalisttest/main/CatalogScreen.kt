@@ -10,8 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.loyalisttest.R
 import com.example.loyalisttest.models.*
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.google.firebase.auth.FirebaseAuth
@@ -44,7 +46,7 @@ fun CatalogScreen(navController: NavHostController) {
 
                     val userRole = snapshot?.getString("role") ?: "USER"
 
-                    // Обновляем состояния в зависимости от роли
+                    // Update states based on role
                     isSuperAdmin = userRole == "SUPER_ADMIN"
                     isAdmin = userRole == "ADMIN"
 
@@ -59,21 +61,21 @@ fun CatalogScreen(navController: NavHostController) {
                         return@addSnapshotListener
                     }
 
-                    // Исправлено: создаём пары ключ-значение явно
+                    // Create key-value pairs explicitly
                     cafes = snapshot?.documents?.mapNotNull { doc ->
                         doc.toObject(Cafe::class.java)?.let { cafe ->
-                            Pair(cafe.id, cafe.copy(id = doc.id)) // Создаём Pair
+                            Pair(cafe.id, cafe.copy(id = doc.id)) // Create Pair
                         }
                     }?.toMap() ?: emptyMap()
                 }
 
             val productQuery = when {
                 isSuperAdmin -> {
-                    // Для супер-админа показываем все продукты
+                    // Super admin sees all products
                     firestore.collection("products").whereEqualTo("active", true)
                 }
                 isAdmin -> {
-                    // Для админа показываем только продукты кафе, которыми он управляет
+                    // Admin sees only products for cafes they manage
                     val managedCafes = firestore.collection("users").document(user.uid).get().await().get("managedCafes") as? List<String> ?: emptyList()
 
                     if (managedCafes.isNotEmpty()) {
@@ -81,12 +83,12 @@ fun CatalogScreen(navController: NavHostController) {
                             .whereEqualTo("active", true)
                             .whereIn("cafeId", managedCafes)
                     } else {
-                        // Если у админа нет управляемых кафе, не загружаем продукты
+                        // If admin has no managed cafes, don't load products
                         null
                     }
                 }
                 else -> {
-                    // Для пользователя показываем все активные продукты
+                    // Regular user sees all active products
                     firestore.collection("products")
                         .whereEqualTo("active", true)
                 }
@@ -111,18 +113,24 @@ fun CatalogScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Каталог") },
+                title = { Text(stringResource(R.string.catalog_title)) },
                 actions = {
                     if (isSuperAdmin) {
-                        // Кнопка добавления кафе
+                        // Add cafe button
                         IconButton(onClick = { navController.navigate(NavigationRoutes.AddCafe.route) }) {
-                            Icon(Icons.Default.Add, contentDescription = "Добавить кафе")
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = stringResource(R.string.catalog_add_cafe)
+                            )
                         }
                     }
                     if (isSuperAdmin || isAdmin) {
-                        // Кнопка добавления товара
+                        // Add product button
                         IconButton(onClick = { navController.navigate(NavigationRoutes.AddProduct.route) }) {
-                            Icon(Icons.Default.Add, "Добавить товар")
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = stringResource(R.string.catalog_add_product)
+                            )
                         }
                     }
                 }
@@ -140,7 +148,7 @@ fun CatalogScreen(navController: NavHostController) {
                 }
                 error != null -> {
                     Text(
-                        text = error!!,
+                        text = stringResource(R.string.catalog_loading_error, error ?: ""),
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(16.dp)
@@ -148,7 +156,7 @@ fun CatalogScreen(navController: NavHostController) {
                 }
                 products.isEmpty() -> {
                     Text(
-                        text = "Нет доступных товаров",
+                        text = stringResource(R.string.catalog_no_products),
                         modifier = Modifier
                             .align(Alignment.Center)
                             .padding(16.dp)

@@ -1,5 +1,6 @@
 package com.example.loyalisttest
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.navigation.compose.rememberNavController
 import com.example.loyalisttest.auth.AuthCheck
+import com.example.loyalisttest.language.LanguageManager
 import com.example.loyalisttest.language.LocalizedContent
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.example.loyalisttest.navigation.SetupNavGraph
@@ -18,6 +20,10 @@ import com.example.loyalisttest.ui.theme.LoyalistTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize language manager
+        LanguageManager.init(this)
+
         enableEdgeToEdge()
         setContent {
             LoyalistTheme {

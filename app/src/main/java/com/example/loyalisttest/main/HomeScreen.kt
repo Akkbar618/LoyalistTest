@@ -43,18 +43,20 @@ fun HomeScreen(navController: NavHostController) {
     var error by remember { mutableStateOf<String?>(null) }
 
     val currentUser = FirebaseAuth.getInstance().currentUser
-    val userName = remember { currentUser?.displayName ?: "Пользователь" }
+    val defaultUserName = stringResource(R.string.default_user_name)
+    val userName = remember(currentUser, defaultUserName) {
+        currentUser?.displayName ?: defaultUserName
+    }
     val userId = currentUser?.uid ?: ""
     val firestore = FirebaseFirestore.getInstance()
-
-    // Логика загрузки данных остается прежней
+    // Data loading logic should be implemented here
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(bottom = 16.dp)
     ) {
-        // Верхняя панель
+        // Top panel
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.Black,
@@ -88,7 +90,7 @@ fun HomeScreen(navController: NavHostController) {
         }
 
         if (!isAdmin) {
-            // QR-код для пользователей
+            // QR code for users
             var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
             var isQrLoading by remember { mutableStateOf(true) }
 
@@ -138,8 +140,33 @@ fun HomeScreen(navController: NavHostController) {
                     }
                 }
             }
+
+            // You might want to add a section to display user's loyalty points here
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (error != null) {
+                Text(
+                    text = stringResource(R.string.loading_error, error ?: ""),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(16.dp)
+                )
+            } else if (userPointsList.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.home_no_progress),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
+            }
+            // else { Display user loyalty points list }
         }
-
-
     }
 }

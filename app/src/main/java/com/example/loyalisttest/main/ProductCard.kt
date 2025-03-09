@@ -4,7 +4,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.loyalisttest.R
 import com.example.loyalisttest.components.ProgressScale
 import com.example.loyalisttest.models.Cafe
 import com.example.loyalisttest.models.Product
@@ -25,8 +28,9 @@ fun ProductCard(
 
     val currentUser = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
+    val context = LocalContext.current
 
-    // Загружаем прогресс для обычных пользователей
+    // Load progress for regular users
     LaunchedEffect(product.id) {
         if (!isAdmin && currentUser != null) {
             firestore.collection("userPoints")
@@ -50,7 +54,7 @@ fun ProductCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Название кафе
+            // Cafe name
             cafe?.let {
                 Text(
                     text = it.name,
@@ -75,7 +79,7 @@ fun ProductCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "${product.price} ₽",
+                text = stringResource(R.string.price_format, product.price),
                 style = MaterialTheme.typography.titleSmall
             )
 
@@ -98,12 +102,19 @@ fun ProductCard(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "${userPoints?.currentProgress ?: 0} из ${product.scaleSize}",
+                                text = stringResource(
+                                    R.string.points_count,
+                                    userPoints?.currentProgress ?: 0,
+                                    product.scaleSize
+                                ),
                                 style = MaterialTheme.typography.bodySmall
                             )
 
                             Text(
-                                text = "Получено наград: ${userPoints?.rewardsReceived ?: 0}",
+                                text = stringResource(
+                                    R.string.rewards_count,
+                                    userPoints?.rewardsReceived ?: 0
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -118,7 +129,7 @@ fun ProductCard(
                     onClick = onScanClick,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Сканировать QR код")
+                    Text(stringResource(R.string.catalog_scan_qr))
                 }
             }
         }

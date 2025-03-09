@@ -18,6 +18,11 @@
     <string name="or">или</string>
     <string name="dont_have_account">Нет аккаунта? </string>
     <string name="sign_up_link">Зарегистрироваться</string>
+    <string name="error_fill_all_fields">Заполните все поля</string>
+    <string name="success_auth">Успешная авторизация</string>
+    <string name="error_profile_creation">Ошибка создания профиля: %1$s</string>
+    <string name="error_profile_check">Ошибка проверки профиля: %1$s</string>
+    <string name="error_auth">Ошибка авторизации</string>
 
     <!-- Sign Up Screen -->
     <string name="sign_up_title">Регистрация</string>
@@ -26,6 +31,16 @@
     <string name="sign_up_button">Создать аккаунт</string>
     <string name="already_have_account">Уже есть аккаунт? </string>
     <string name="sign_in_link">Войти</string>
+    <string name="error_enter_name">Введите имя</string>
+    <string name="error_enter_email">Введите email</string>
+    <string name="error_enter_password">Введите пароль</string>
+    <string name="error_confirm_password">Подтвердите пароль</string>
+    <string name="error_passwords_dont_match">Пароли не совпадают</string>
+    <string name="error_password_too_short">Пароль должен быть не менее 6 символов</string>
+    <string name="registration_success">Регистрация успешна</string>
+    <string name="registration_error">Ошибка регистрации: %1$s</string>
+    <string name="reset_instructions_sent">Инструкции для сброса пароля отправлены на ваш email</string>
+    <string name="error_sending_email">Ошибка отправки письма: %1$s</string>
 
     <!-- Forgot Password Screen -->
     <string name="forgot_password_title">Забыли пароль?</string>
@@ -81,6 +96,17 @@
     <string name="no_cafes_available">Нет доступных кафе</string>
     <string name="fill_all_fields">Пожалуйста, заполните все поля</string>
     <string name="success_add_product">Товар успешно добавлен</string>
+    <string name="error_no_managed_cafes">У вас нет прикрепленных кафе</string>
+    <string name="error_insufficient_rights_product">Недостаточно прав для добавления товаров</string>
+    <string name="error_no_cafes">Нет доступных кафе</string>
+    <string name="error_loading_cafes">Ошибка загрузки списка кафе: %1$s</string>
+    <string name="error_select_cafe">Выберите кафе</string>
+    <string name="error_enter_product_name">Введите название товара</string>
+    <string name="error_scale_size">Количество делений должно быть больше 0</string>
+    <string name="error_enter_valid_price">Введите корректную цену</string>
+    <string name="error_updating_product_id">Ошибка обновления ID товара: %1$s</string>
+    <string name="error_adding_product">Ошибка при добавлении товара: %1$s</string>
+    <string name="error_no_rights_for_cafe">У вас нет прав на добавление товаров в это кафе</string>
 
     <!-- Add Cafe -->
     <string name="add_cafe">Добавить кафе</string>
@@ -88,6 +114,14 @@
     <string name="cafe_description">Описание</string>
     <string name="cafe_category">Категория заведения</string>
     <string name="success_add_cafe">Кафе успешно добавлено</string>
+    <string name="error_auth_required">Необходима авторизация</string>
+    <string name="error_insufficient_rights_cafe">Недостаточно прав для создания кафе</string>
+    <string name="error_checking_rights">Ошибка проверки прав: %1$s</string>
+    <string name="error_enter_cafe_name">Введите название кафе</string>
+    <string name="error_enter_description">Введите описание</string>
+    <string name="error_updating_cafe_id">Ошибка обновления ID кафе: %1$s</string>
+    <string name="error_adding_cafe">Ошибка при добавлении кафе: %1$s</string>
+    <string name="back">Назад</string>
 
     <!-- QR Scanner -->
     <string name="scan_qr_title">Сканирование QR-кода</string>
@@ -97,4 +131,34 @@
     <string name="try_again">Попробовать снова</string>
     <string name="congratulations">Поздравляем! Клиент получил награду!</string>
     <string name="progress_updated">Прогресс обновлен!</string>
+    <string name="error_loading_data">Error loading data: %1$s</string>
+    <string name="error_insufficient_rights_points">Insufficient rights for adding points</string>
+
+    <!-- Admin QR Scanner -->
+    <string name="error_insufficient_rights_scan">Недостаточно прав для сканирования</string>
+    <string name="error_no_cafe_management_rights">У вас нет прав на управление этим кафе</string>
+    <string name="error_generic">Ошибка: %1$s</string>
+    <string name="mark_for_product">Отметка за %1$s</string>
+    <string name="error_updating_progress">Ошибка при обновлении прогресса: %1$s</string>
+
+    <!-- Main Screen -->
+    <string name="nav_home">Home</string>
+    <string name="nav_catalog">Catalog</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Points History Screen -->
+    <string name="history_title">Progress History</string>
+    <string name="error_user_not_authenticated">User not authenticated</string>
+    <string name="error_loading_history">Error loading history: %1$s</string>
+    <string name="history_empty">History is empty</string>
+    <string name="unknown_user">Unknown user</string>
+    <string name="reward_received">Reward received!</string>
+    <string name="progress_count">Progress: %1$d</string>
+    <string name="history_user_label">User: %1$s</string>
+    <string name="history_cafe_label">Cafe: %1$s</string>
+    <string name="history_product_label">Product: %1$s</string>
+
+    <!-- Full QR Code Screen -->
+    <string name="qr_code_fullscreen">QR-код полноэкранный</string>
+
 </resources>

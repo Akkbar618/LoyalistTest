@@ -10,12 +10,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import android.widget.Toast
+import com.example.loyalisttest.R
 import com.example.loyalisttest.models.Cafe
 import com.example.loyalisttest.models.UserRole
 import kotlinx.coroutines.tasks.await
@@ -41,12 +43,12 @@ fun AddProductScreen(
     val currentUser = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
 
-    // Загружаем кафе в зависимости от роли пользователя
+    // Load cafes based on user role
     LaunchedEffect(currentUser) {
         try {
             isLoading = true
             if (currentUser != null) {
-                // Получаем роль пользователя
+                // Get user role
                 val userDoc = firestore.collection("users")
                     .document(currentUser.uid)
                     .get()
@@ -54,18 +56,18 @@ fun AddProductScreen(
 
                 userRole = userDoc.getString("role")
 
-                // В зависимости от роли загружаем кафе
+                // Load cafes based on role
                 val cafesQuery = when (userRole) {
                     UserRole.SUPER_ADMIN.name -> {
-                        // Супер-админ видит все активные кафе
+                        // Super admin sees all active cafes
                         firestore.collection("cafes")
                             .whereEqualTo("active", true)
                     }
                     UserRole.ADMIN.name -> {
-                        // Админ видит только свои кафе
+                        // Admin sees only their cafes
                         val managedCafes = userDoc.get("managedCafes") as? List<String> ?: emptyList()
                         if (managedCafes.isEmpty()) {
-                            error = "У вас нет прикрепленных кафе"
+                            error = context.getString(R.string.error_no_managed_cafes)
                             return@LaunchedEffect
                         }
                         firestore.collection("cafes")
@@ -73,7 +75,7 @@ fun AddProductScreen(
                             .whereIn("id", managedCafes)
                     }
                     else -> {
-                        error = "Недостаточно прав для добавления товаров"
+                        error = context.getString(R.string.error_insufficient_rights_product)
                         return@LaunchedEffect
                     }
                 }
@@ -84,11 +86,11 @@ fun AddProductScreen(
                 }
 
                 if (cafes.isEmpty()) {
-                    error = "Нет доступных кафе"
+                    error = context.getString(R.string.error_no_cafes)
                 }
             }
         } catch (e: Exception) {
-            error = "Ошибка загрузки списка кафе: ${e.message}"
+            error = context.getString(R.string.error_loading_cafes, e.message ?: "")
         } finally {
             isLoading = false
         }
@@ -97,23 +99,23 @@ fun AddProductScreen(
     fun validateInputs(): Boolean {
         return when {
             selectedCafe == null -> {
-                error = "Выберите кафе"
+                error = context.getString(R.string.error_select_cafe)
                 false
             }
             name.isBlank() -> {
-                error = "Введите название товара"
+                error = context.getString(R.string.error_enter_product_name)
                 false
             }
             description.isBlank() -> {
-                error = "Введите описание"
+                error = context.getString(R.string.error_enter_description)
                 false
             }
             scaleSize.toIntOrNull() == null || scaleSize.toInt() < 1 -> {
-                error = "Количество делений должно быть больше 0"
+                error = context.getString(R.string.error_scale_size)
                 false
             }
             price.isBlank() || price.toDoubleOrNull() == null -> {
-                error = "Введите корректную цену"
+                error = context.getString(R.string.error_enter_valid_price)
                 false
             }
             else -> true
@@ -125,7 +127,7 @@ fun AddProductScreen(
 
         isLoading = true
 
-        val productData = hashMapOf<String, Any>( // Явно указываем тип
+        val productData = hashMapOf<String, Any>(
             "name" to name.trim(),
             "description" to description.trim(),
             "scaleSize" to (scaleSize.toIntOrNull() ?: 10),
@@ -138,35 +140,34 @@ fun AddProductScreen(
             "imageUrl" to ""
         )
 
-        // И изменим сигнатуру внутренней функции:
         fun addProductToFirestore(data: Map<String, Any>) {
             firestore.collection("products")
                 .add(data)
                 .addOnSuccessListener { docRef ->
                     docRef.update(mapOf("id" to docRef.id))
                         .addOnSuccessListener {
-                            Toast.makeText(context, "Товар успешно добавлен", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.success_add_product), Toast.LENGTH_SHORT).show()
                             navController.popBackStack()
                         }
                         .addOnFailureListener { e ->
-                            error = "Ошибка обновления ID товара: ${e.message}"
+                            error = context.getString(R.string.error_updating_product_id, e.message ?: "")
                             isLoading = false
                         }
                 }
                 .addOnFailureListener { e ->
-                    error = "Ошибка при добавлении товара: ${e.message}"
+                    error = context.getString(R.string.error_adding_product, e.message ?: "")
                     isLoading = false
                 }
         }
 
-        // Проверяем права на добавление товара
+        // Check permissions to add product
         when (userRole) {
             UserRole.SUPER_ADMIN.name -> {
-                // Супер-админ может добавлять товары в любое кафе
+                // Super admin can add products to any cafe
                 addProductToFirestore(productData)
             }
             UserRole.ADMIN.name -> {
-                // Проверяем, принадлежит ли кафе админу
+                // Check if the cafe belongs to the admin
                 currentUser?.let { user ->
                     firestore.collection("users")
                         .document(user.uid)
@@ -176,18 +177,18 @@ fun AddProductScreen(
                             if (managedCafes.contains(selectedCafe?.id)) {
                                 addProductToFirestore(productData)
                             } else {
-                                error = "У вас нет прав на добавление товаров в это кафе"
+                                error = context.getString(R.string.error_no_rights_for_cafe)
                                 isLoading = false
                             }
                         }
                         .addOnFailureListener { e ->
-                            error = "Ошибка проверки прав: ${e.message}"
+                            error = context.getString(R.string.error_checking_rights, e.message ?: "")
                             isLoading = false
                         }
                 }
             }
             else -> {
-                error = "Недостаточно прав для добавления товаров"
+                error = context.getString(R.string.error_insufficient_rights_product)
                 isLoading = false
             }
         }
@@ -196,10 +197,10 @@ fun AddProductScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Добавить товар") },
+                title = { Text(stringResource(R.string.add_product)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, "Назад")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -213,7 +214,7 @@ fun AddProductScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Выбор кафе
+            // Cafe selection
             ExposedDropdownMenuBox(
                 expanded = isDropdownExpanded,
                 onExpandedChange = { isDropdownExpanded = it }
@@ -222,7 +223,7 @@ fun AddProductScreen(
                     value = selectedCafe?.name ?: "",
                     onValueChange = { },
                     readOnly = true,
-                    label = { Text("Выберите кафе") },
+                    label = { Text(stringResource(R.string.select_cafe)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(),
@@ -245,41 +246,41 @@ fun AddProductScreen(
                 }
             }
 
-            // Название товара
+            // Product name
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Название товара") },
+                label = { Text(stringResource(R.string.product_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             )
 
-            // Описание
+            // Description
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Описание") },
+                label = { Text(stringResource(R.string.product_description)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 enabled = !isLoading
             )
 
-            // Количество делений шкалы
+            // Scale size
             OutlinedTextField(
                 value = scaleSize,
                 onValueChange = { scaleSize = it.filter { char -> char.isDigit() } },
-                label = { Text("Количество делений для награды") },
+                label = { Text(stringResource(R.string.product_scale)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 enabled = !isLoading,
-                supportingText = { Text("Сколько покупок нужно для получения награды") }
+                supportingText = { Text(stringResource(R.string.product_scale_hint)) }
             )
 
-            // Цена
+            // Price
             OutlinedTextField(
                 value = price,
                 onValueChange = { price = it.filter { char -> char.isDigit() || char == '.' } },
-                label = { Text("Цена") },
+                label = { Text(stringResource(R.string.product_price)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 enabled = !isLoading
@@ -304,7 +305,7 @@ fun AddProductScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Добавить товар")
+                    Text(stringResource(R.string.add_product))
                 }
             }
         }

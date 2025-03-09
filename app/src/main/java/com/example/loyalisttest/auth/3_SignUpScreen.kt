@@ -50,27 +50,27 @@ fun SignUpScreen(
     fun validateInput(): Boolean {
         return when {
             name.isBlank() -> {
-                Toast.makeText(context, "Введите имя", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.error_enter_name), Toast.LENGTH_SHORT).show()
                 false
             }
             email.isBlank() -> {
-                Toast.makeText(context, "Введите email", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.error_enter_email), Toast.LENGTH_SHORT).show()
                 false
             }
             password.isBlank() -> {
-                Toast.makeText(context, "Введите пароль", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.error_enter_password), Toast.LENGTH_SHORT).show()
                 false
             }
             confirmPassword.isBlank() -> {
-                Toast.makeText(context, "Подтвердите пароль", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.error_confirm_password), Toast.LENGTH_SHORT).show()
                 false
             }
             password != confirmPassword -> {
-                Toast.makeText(context, "Пароли не совпадают", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.error_passwords_dont_match), Toast.LENGTH_SHORT).show()
                 false
             }
             password.length < 6 -> {
-                Toast.makeText(context, "Пароль должен быть не менее 6 символов", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.error_password_too_short), Toast.LENGTH_SHORT).show()
                 false
             }
             else -> true
@@ -88,33 +88,33 @@ fun SignUpScreen(
         isLoading = true
         lifecycleScope.launch {
             try {
-                // Проверяем, первый ли это пользователь
+                // Check if this is the first user
                 val isFirstUser = FirestoreInitUtils.isFirstUser()
 
-                // Создаем пользователя в Firebase Auth
+                // Create user in Firebase Auth
                 val result = auth.createUserWithEmailAndPassword(email, password).await()
                 val user = result.user ?: throw Exception("Failed to create user")
 
-                // Обновляем профиль пользователя
+                // Update user profile
                 val profileUpdates = UserProfileChangeRequest.Builder()
                     .setDisplayName(name)
                     .build()
                 user.updateProfile(profileUpdates).await()
 
-                // Инициализируем коллекции Firestore
+                // Initialize Firestore collections
                 FirestoreInitUtils.initializeCollections(user.uid, email, name, isFirstUser)
                     .onSuccess {
-                        Toast.makeText(context, "Регистрация успешна", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.registration_success), Toast.LENGTH_SHORT).show()
                         onSignUpClick(name, email, password)
                     }
                     .onFailure { e ->
                         throw e
                     }
             } catch (e: Exception) {
-                Log.e("SignUpScreen", "Ошибка регистрации", e)
+                Log.e("SignUpScreen", "Registration error", e)
                 Toast.makeText(
                     context,
-                    "Ошибка регистрации: ${e.message}",
+                    context.getString(R.string.registration_error, e.message ?: ""),
                     Toast.LENGTH_LONG
                 ).show()
             } finally {
