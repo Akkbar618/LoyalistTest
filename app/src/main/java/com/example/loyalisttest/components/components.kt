@@ -1,21 +1,34 @@
 package com.example.loyalisttest.components
 
 import androidx.compose.foundation.background
-import androidx.compose.material3.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.TextSelectionColors
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.loyalisttest.R
+import androidx.compose.ui.autofill.AutofillNode
+import androidx.compose.ui.autofill.AutofillType
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalAutofill
+import androidx.compose.ui.platform.LocalAutofillTree
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun AuthTextField(
     value: String,
@@ -36,7 +49,29 @@ fun AuthTextField(
         focusedTrailingIconColor = Color.Black,
         unfocusedTrailingIconColor = Color.Gray,
         cursorColor = Color.Black,
+        selectionColors = TextSelectionColors(
+            handleColor = colorResource(id = R.color.light_black), // Цвет стрелки селектора
+            backgroundColor = colorResource(id = R.color.light_black).copy(alpha = 0.4f) // Цвет выделения текста (полупрозрачный)
+        )
     )
+
+    // Определяем тип автозаполнения на основе содержимого label
+    val autofillTypes = when {
+        isPassword -> listOf(AutofillType.Password)
+        label.contains("email", ignoreCase = true) -> listOf(AutofillType.EmailAddress)
+        label.contains("имя", ignoreCase = true) ||
+                label.contains("name", ignoreCase = true) -> listOf(AutofillType.PersonFullName)
+        else -> listOf(AutofillType.Username)
+    }
+
+    // Настройка автозаполнения
+    val autofill = LocalAutofill.current
+    val autofillNode = AutofillNode(
+        autofillTypes = autofillTypes,
+        onFill = { onValueChange(it) }
+    )
+
+    LocalAutofillTree.current += autofillNode
 
     OutlinedTextField(
         value = value,
@@ -48,6 +83,15 @@ fun AuthTextField(
             PasswordVisualTransformation()
         else
             VisualTransformation.None,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = when {
+                isPassword -> KeyboardType.Password
+                label.contains("email", ignoreCase = true) -> KeyboardType.Email
+                else -> KeyboardType.Text
+            },
+            imeAction = ImeAction.Next,
+            autoCorrect = !isPassword
+        ),
         trailingIcon = if (isPassword) {
             {
                 IconButton(onClick = { onVisibilityChange?.invoke() }) {
@@ -56,15 +100,25 @@ fun AuthTextField(
                             if (isPasswordVisible) R.drawable.icon_visible_on
                             else R.drawable.icon_visible_off
                         ),
-                        contentDescription = if (isPasswordVisible)
-                            "Скрыть пароль"
-                        else
-                            "Показать пароль"
+                        contentDescription = if (isPasswordVisible) "Скрыть пароль" else "Показать пароль"
                     )
                 }
             }
         } else null,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                // Обновление размеров и координат узла автозаполнения
+                autofillNode.boundingBox = coordinates.boundsInWindow()
+            }
+            .onFocusChanged { focusState ->
+                // Запуск автозаполнения при получении фокуса
+                if (focusState.isFocused) {
+                    autofill?.requestAutofillForNode(autofillNode)
+                } else {
+                    autofill?.cancelAutofillForNode(autofillNode)
+                }
+            }
     )
 }
 
