@@ -202,9 +202,9 @@ fun AddProductScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
-                .widthIn(max = if (isLandscape) 600.dp else Dp.Unspecified)
-                .align(if (isLandscape) Alignment.CenterHorizontally else Alignment.Start),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .widthIn(max = if (isLandscape) 600.dp else Dp.Unspecified),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = if (isLandscape) Alignment.CenterHorizontally else Alignment.Start
         ) {
             // Cafe selection
             ExposedDropdownMenuBox(

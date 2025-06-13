@@ -59,7 +59,7 @@ fun CatalogScreen(navController: NavHostController) {
                 }
 
             firestore.collection("cafes")
-                .whereEqualTo("isActive", true)
+                .whereEqualTo("active", true)
                 .addSnapshotListener { snapshot, e ->
                     if (e != null) {
                         error = e.message
