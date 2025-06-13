@@ -12,12 +12,17 @@ object FirestoreInitUtils {
     /**
      * Инициализирует коллекции Firestore для нового пользователя
      */
-    suspend fun initializeCollections(userId: String, email: String, name: String, isFirstUser: Boolean): Result<Unit> {
-        return try {
-            Log.d(TAG, "Starting initialization for user: $userId, isFirstUser: $isFirstUser")
+suspend fun initializeCollections(
+    userId: String,
+    email: String,
+    name: String,
+    isFirstUserFlag: Boolean
+): Result<Unit> {
+    return try {
+        Log.d(TAG, "Starting initialization for user: $userId, isFirstUser: $isFirstUserFlag")
 
-            // Проверяем, действительно ли это первый пользователь
-            val actuallyFirst = isFirstUser && isFirstUser()
+        // Проверяем, действительно ли это первый пользователь
+        val actuallyFirst = isFirstUserFlag && isFirstUser()
             Log.d(TAG, "Verified first user status: $actuallyFirst")
 
             // Определяем роль пользователя
