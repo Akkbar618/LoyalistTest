@@ -59,7 +59,6 @@
     <string name="settings_user_section">Профиль пользователя</string>
     <string name="default_user_name">Пользователь</string>
     <string name="settings_dark_theme">Темная тема</string>
-
     <string name="settings_edit_name">Имя</string>
     <string name="settings_edit_email">Email</string>
     <string name="settings_save_profile">Сохранить</string>
