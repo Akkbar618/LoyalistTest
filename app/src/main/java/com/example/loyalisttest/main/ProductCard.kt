@@ -1,5 +1,8 @@
 package com.example.loyalisttest.main
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,6 +18,7 @@ import com.example.loyalisttest.models.UserPoints
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ProductCard(
     product: Product,
@@ -47,7 +51,9 @@ fun ProductCard(
     }
 
     Card(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize()
     ) {
         Column(
             modifier = Modifier
@@ -86,38 +92,40 @@ fun ProductCard(
             if (!isAdmin) {
                 Spacer(modifier = Modifier.height(12.dp))
 
-                if (isLoadingProgress) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                } else {
-                    Column {
-                        ProgressScale(
-                            currentProgress = userPoints?.currentProgress ?: 0,
-                            maxProgress = product.scaleSize
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = stringResource(
-                                    R.string.points_count,
-                                    userPoints?.currentProgress ?: 0,
-                                    product.scaleSize
-                                ),
-                                style = MaterialTheme.typography.bodySmall
+                AnimatedContent(targetState = isLoadingProgress) { loading ->
+                    if (loading) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    } else {
+                        Column {
+                            ProgressScale(
+                                currentProgress = userPoints?.currentProgress ?: 0,
+                                maxProgress = product.scaleSize
                             )
 
-                            Text(
-                                text = stringResource(
-                                    R.string.rewards_count,
-                                    userPoints?.rewardsReceived ?: 0
-                                ),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.points_count,
+                                        userPoints?.currentProgress ?: 0,
+                                        product.scaleSize
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+
+                                Text(
+                                    text = stringResource(
+                                        R.string.rewards_count,
+                                        userPoints?.rewardsReceived ?: 0
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }

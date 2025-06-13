@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -20,6 +21,7 @@ import com.google.firebase.auth.FirebaseAuth
 @Composable
 fun MainScreen(navController: NavHostController) {
     val mainNavController = rememberNavController()
+    val isLandscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     DisposableEffect(Unit) {
         val authStateListener = FirebaseAuth.AuthStateListener { auth ->
@@ -43,11 +45,6 @@ fun MainScreen(navController: NavHostController) {
     // Bottom navigation items
     val navItems = listOf(
         Triple(
-            NavigationRoutes.Home.route,
-            stringResource(R.string.nav_home),
-            Icons.Default.Home
-        ),
-        Triple(
             NavigationRoutes.Catalog.route,
             stringResource(R.string.nav_catalog),
             Icons.Default.List
@@ -61,42 +58,60 @@ fun MainScreen(navController: NavHostController) {
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                navItems.forEach { (route, title, icon) ->
-                    NavigationBarItem(
-                        icon = { Icon(icon, contentDescription = title) },
-                        label = { Text(title) },
-                        selected = currentRoute == route,
-                        onClick = {
-                            if (currentRoute != route) {
-                                mainNavController.navigate(route) {
-                                    popUpTo(mainNavController.graph.startDestinationId) {
-                                        saveState = true
+            if (!isLandscape) {
+                NavigationBar {
+                    navItems.forEach { (route, title, icon) ->
+                        NavigationBarItem(
+                            icon = { Icon(icon, contentDescription = title) },
+                            label = { Text(title) },
+                            selected = currentRoute == route,
+                            onClick = {
+                                if (currentRoute != route) {
+                                    mainNavController.navigate(route) {
+                                        popUpTo(mainNavController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
     ) { paddingValues ->
-        NavHost(
-            navController = mainNavController,
-            startDestination = NavigationRoutes.Home.route,
-            modifier = Modifier.padding(paddingValues)
-        ) {
-            // Base screens
-            composable(
-                route = NavigationRoutes.Home.route,
-                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
-                exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
-            ) {
-                HomeScreen(mainNavController)
+        Row(modifier = Modifier.fillMaxSize()) {
+            if (isLandscape) {
+                NavigationRail {
+                    navItems.forEach { (route, title, icon) ->
+                        NavigationRailItem(
+                            icon = { Icon(icon, contentDescription = title) },
+                            label = { Text(title) },
+                            selected = currentRoute == route,
+                            onClick = {
+                                if (currentRoute != route) {
+                                    mainNavController.navigate(route) {
+                                        popUpTo(mainNavController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
             }
 
+            NavHost(
+                navController = mainNavController,
+                startDestination = NavigationRoutes.Catalog.route,
+                modifier = Modifier.padding(paddingValues).weight(1f)
+            ) {
+            // Base screens
             composable(
                 route = NavigationRoutes.Catalog.route,
                 enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
@@ -139,15 +154,7 @@ fun MainScreen(navController: NavHostController) {
                 AddProductScreen(mainNavController)
             }
 
-            // QR code and scanning
-            composable(
-                route = NavigationRoutes.QrCodeFullscreen.route,
-                enterTransition = { Transitions.enterScale() },
-                exitTransition = { Transitions.exitScale() }
-            ) {
-                QrCodeFullscreenScreen(mainNavController)
-            }
-
+            // QR scanning
             composable(
                 route = NavigationRoutes.QrScanner.route,
                 arguments = listOf(

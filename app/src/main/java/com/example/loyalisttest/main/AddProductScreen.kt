@@ -8,11 +8,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -42,6 +46,8 @@ fun AddProductScreen(
     val context = LocalContext.current
     val currentUser = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
+    val coroutineScope = rememberCoroutineScope()
+    val isLandscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     // Load cafes based on user role
     LaunchedEffect(currentUser) {
@@ -125,70 +131,54 @@ fun AddProductScreen(
     fun addProduct() {
         if (!validateInputs()) return
 
-        isLoading = true
+        coroutineScope.launch {
+            isLoading = true
 
-        val productData = hashMapOf<String, Any>(
-            "name" to name.trim(),
-            "description" to description.trim(),
-            "scaleSize" to (scaleSize.toIntOrNull() ?: 10),
-            "price" to (price.toDoubleOrNull() ?: 0.0),
-            "cafeId" to (selectedCafe?.id ?: ""),
-            "active" to true,
-            "createdAt" to System.currentTimeMillis(),
-            "createdBy" to (currentUser?.uid ?: ""),
-            "category" to "",
-            "imageUrl" to ""
-        )
+            val productData = hashMapOf<String, Any>(
+                "name" to name.trim(),
+                "description" to description.trim(),
+                "scaleSize" to (scaleSize.toIntOrNull() ?: 10),
+                "price" to (price.toDoubleOrNull() ?: 0.0),
+                "cafeId" to (selectedCafe?.id ?: ""),
+                "active" to true,
+                "createdAt" to System.currentTimeMillis(),
+                "createdBy" to (currentUser?.uid ?: ""),
+                "category" to "",
+                "imageUrl" to ""
+            )
 
-        fun addProductToFirestore(data: Map<String, Any>) {
-            firestore.collection("products")
-                .add(data)
-                .addOnSuccessListener { docRef ->
-                    docRef.update(mapOf("id" to docRef.id))
-                        .addOnSuccessListener {
-                            Toast.makeText(context, context.getString(R.string.success_add_product), Toast.LENGTH_SHORT).show()
-                            navController.popBackStack()
-                        }
-                        .addOnFailureListener { e ->
-                            error = context.getString(R.string.error_updating_product_id, e.message ?: "")
-                            isLoading = false
-                        }
-                }
-                .addOnFailureListener { e ->
-                    error = context.getString(R.string.error_adding_product, e.message ?: "")
-                    isLoading = false
-                }
-        }
-
-        // Check permissions to add product
-        when (userRole) {
-            UserRole.SUPER_ADMIN.name -> {
-                // Super admin can add products to any cafe
-                addProductToFirestore(productData)
+            suspend fun addProductToFirestore(data: Map<String, Any>) {
+                val docRef = firestore.collection("products").add(data).await()
+                docRef.update("id", docRef.id).await()
+                Toast.makeText(context, context.getString(R.string.success_add_product), Toast.LENGTH_SHORT).show()
+                navController.popBackStack()
             }
-            UserRole.ADMIN.name -> {
-                // Check if the cafe belongs to the admin
-                currentUser?.let { user ->
-                    firestore.collection("users")
-                        .document(user.uid)
-                        .get()
-                        .addOnSuccessListener { userDoc ->
+
+            try {
+                when (userRole) {
+                    UserRole.SUPER_ADMIN.name -> {
+                        addProductToFirestore(productData)
+                    }
+                    UserRole.ADMIN.name -> {
+                        currentUser?.let { user ->
+                            val userDoc = firestore.collection("users").document(user.uid).get().await()
                             val managedCafes = userDoc.get("managedCafes") as? List<String> ?: emptyList()
                             if (managedCafes.contains(selectedCafe?.id)) {
                                 addProductToFirestore(productData)
                             } else {
                                 error = context.getString(R.string.error_no_rights_for_cafe)
-                                isLoading = false
                             }
+                        } ?: run {
+                            error = context.getString(R.string.error_auth_required)
                         }
-                        .addOnFailureListener { e ->
-                            error = context.getString(R.string.error_checking_rights, e.message ?: "")
-                            isLoading = false
-                        }
+                    }
+                    else -> {
+                        error = context.getString(R.string.error_insufficient_rights_product)
+                    }
                 }
-            }
-            else -> {
-                error = context.getString(R.string.error_insufficient_rights_product)
+            } catch (e: Exception) {
+                error = context.getString(R.string.error_adding_product, e.message ?: "")
+            } finally {
                 isLoading = false
             }
         }
@@ -208,10 +198,12 @@ fun AddProductScreen(
     ) { paddingValues ->
         Column(
             modifier = modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(paddingValues)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .widthIn(max = if (isLandscape) 600.dp else Dp.Unspecified)
+                .align(if (isLandscape) Alignment.CenterHorizontally else Alignment.Start),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Cafe selection
