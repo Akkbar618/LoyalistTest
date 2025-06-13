@@ -58,6 +58,7 @@
     <string name="settings_cancel">Cancel</string>
     <string name="settings_user_section">User Profile</string>
     <string name="default_user_name">User</string>
+    <string name="settings_dark_theme">Dark theme</string>
 
     <!-- Home Screen -->
 

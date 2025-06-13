@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.example.loyalisttest.R
 import com.example.loyalisttest.language.LanguageSwitcher
+import com.example.loyalisttest.theme.ThemeManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,6 +95,34 @@ fun SettingsScreen() {
                             it.startActivity(intent)
                             it.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                         }
+                    }
+                )
+            }
+        }
+
+        // Card with theme switch
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_dark_theme),
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                val isDark by ThemeManager.darkTheme
+                Switch(
+                    checked = isDark,
+                    onCheckedChange = {
+                        ThemeManager.toggleTheme(context)
                     }
                 )
             }
