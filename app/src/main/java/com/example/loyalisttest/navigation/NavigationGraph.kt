@@ -88,15 +88,7 @@ fun SetupNavGraph(
             MainScreen(navController = navController)
         }
 
-        // QR-код и сканирование
-        composable(
-            route = NavigationRoutes.QrCodeFullscreen.route,
-            enterTransition = { Transitions.enterScale() },
-            exitTransition = { Transitions.exitScale() }
-        ) {
-            QrCodeFullscreenScreen(navController = navController)
-        }
-
+        // QR-код сканирование
         composable(
             route = NavigationRoutes.QrScanner.route,
             arguments = listOf(
@@ -122,14 +114,6 @@ fun SetupNavGraph(
         }
 
         // Существующие маршруты нижней навигации
-        composable(
-            route = NavigationRoutes.Home.route,
-            enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
-            exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
-        ) {
-            HomeScreen(navController)
-        }
-
         composable(
             route = NavigationRoutes.Catalog.route,
             enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
