@@ -10,7 +10,10 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
@@ -39,6 +42,7 @@ fun AddCafeScreen(
     val firestore = FirebaseFirestore.getInstance()
     val currentUser = FirebaseAuth.getInstance().currentUser
     val coroutineScope = rememberCoroutineScope()
+    val isLandscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     // Check access rights when loading screen
     LaunchedEffect(currentUser) {
@@ -149,11 +153,13 @@ fun AddCafeScreen(
         } else {
             Column(
                 modifier = modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(paddingValues)
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .verticalScroll(rememberScrollState())
+                    .widthIn(max = if (isLandscape) 600.dp else Dp.Unspecified),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = if (isLandscape) Alignment.CenterHorizontally else Alignment.Start
             ) {
                 OutlinedTextField(
                     value = name,

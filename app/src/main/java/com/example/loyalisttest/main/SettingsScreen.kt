@@ -14,6 +14,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.UserProfileChangeRequest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import com.google.firebase.auth.FirebaseAuth
 import com.example.loyalisttest.R
 import com.example.loyalisttest.language.LanguageSwitcher
@@ -26,6 +30,12 @@ fun SettingsScreen() {
     var showSignOutDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val activity = context as? Activity
+    val coroutineScope = rememberCoroutineScope()
+
+    var name by remember(currentUser) { mutableStateOf(currentUser?.displayName ?: "") }
+    var email by remember(currentUser) { mutableStateOf(currentUser?.email ?: "") }
+    var isSaving by remember { mutableStateOf(false) }
+    var updateMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -59,15 +69,86 @@ fun SettingsScreen() {
                         modifier = Modifier.padding(end = 8.dp)
                     )
                     Text(
-                        text = currentUser?.displayName ?: stringResource(R.string.default_user_name),
+                        text = stringResource(R.string.settings_user_section),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
-                Text(
-                    text = currentUser?.email ?: "",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.settings_edit_name)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    singleLine = true,
+                    enabled = !isSaving
                 )
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text(stringResource(R.string.settings_edit_email)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    singleLine = true,
+                    enabled = !isSaving
+                )
+
+                if (updateMessage != null) {
+                    Text(
+                        text = updateMessage!!,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        if (name.isBlank() || email.isBlank() || currentUser == null) {
+                            updateMessage = context.getString(R.string.fill_all_fields)
+                            return@Button
+                        }
+                        coroutineScope.launch {
+                            isSaving = true
+                            try {
+                                val profileUpdates = UserProfileChangeRequest.Builder()
+                                    .setDisplayName(name.trim())
+                                    .build()
+                                currentUser.updateProfile(profileUpdates).await()
+                                currentUser.updateEmail(email.trim()).await()
+                                FirebaseFirestore.getInstance()
+                                    .collection("users")
+                                    .document(currentUser.uid)
+                                    .update(mapOf(
+                                        "name" to name.trim(),
+                                        "email" to email.trim()
+                                    )).await()
+                                updateMessage = context.getString(R.string.settings_profile_updated)
+                            } catch (e: Exception) {
+                                updateMessage = context.getString(
+                                    R.string.settings_error_updating_profile,
+                                    e.message ?: ""
+                                )
+                            } finally {
+                                isSaving = false
+                            }
+                        }
+                    },
+                    enabled = !isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text(stringResource(R.string.settings_save_profile))
+                    }
+                }
             }
         }
 

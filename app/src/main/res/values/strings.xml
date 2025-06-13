@@ -59,6 +59,11 @@
     <string name="settings_user_section">User Profile</string>
     <string name="default_user_name">User</string>
     <string name="settings_dark_theme">Dark theme</string>
+    <string name="settings_edit_name">Name</string>
+    <string name="settings_edit_email">Email</string>
+    <string name="settings_save_profile">Save</string>
+    <string name="settings_profile_updated">Profile updated</string>
+    <string name="settings_error_updating_profile">Error updating profile: %1$s</string>
 
     <!-- Home Screen -->
 

@@ -11,9 +11,12 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -44,6 +47,7 @@ fun AddProductScreen(
     val currentUser = FirebaseAuth.getInstance().currentUser
     val firestore = FirebaseFirestore.getInstance()
     val coroutineScope = rememberCoroutineScope()
+    val isLandscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     // Load cafes based on user role
     LaunchedEffect(currentUser) {
@@ -194,11 +198,13 @@ fun AddProductScreen(
     ) { paddingValues ->
         Column(
             modifier = modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(paddingValues)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState())
+                .widthIn(max = if (isLandscape) 600.dp else Dp.Unspecified),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = if (isLandscape) Alignment.CenterHorizontally else Alignment.Start
         ) {
             // Cafe selection
             ExposedDropdownMenuBox(
