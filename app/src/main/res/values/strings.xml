@@ -65,8 +65,6 @@
     <string name="settings_profile_updated">Profile updated</string>
     <string name="settings_error_updating_profile">Error updating profile: %1$s</string>
 
-    <!-- Home Screen -->
-
     <!-- Catalog Screen -->
     <string name="catalog_title">Catalog</string>
     <string name="catalog_add_cafe">Add Cafe</string>

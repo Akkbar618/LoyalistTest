@@ -87,47 +87,5 @@ fun SetupNavGraph(
         ) {
             MainScreen(navController = navController)
         }
-
-        // QR-код сканирование
-        composable(
-            route = NavigationRoutes.QrScanner.route,
-            arguments = listOf(
-                navArgument("productId") { type = NavType.StringType }
-            ),
-            enterTransition = { Transitions.enterScale() },
-            exitTransition = { Transitions.exitScale() }
-        ) { backStackEntry ->
-            val productId = backStackEntry.arguments?.getString("productId") ?: ""
-            QrScannerScreen(
-                navController = navController,
-                productId = productId
-            )
-        }
-
-        // Добавление товара
-        composable(
-            route = NavigationRoutes.AddProduct.route,
-            enterTransition = { Transitions.enterScale() },
-            exitTransition = { Transitions.exitScale() }
-        ) {
-            AddProductScreen(navController)
-        }
-
-        // Существующие маршруты нижней навигации
-        composable(
-            route = NavigationRoutes.Catalog.route,
-            enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
-            exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
-        ) {
-            CatalogScreen(navController)
-        }
-
-        composable(
-            route = NavigationRoutes.Settings.route,
-            enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
-            exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
-        ) {
-            SettingsScreen()
-        }
     }
 }
