@@ -87,6 +87,5 @@ fun SetupNavGraph(
         ) {
             MainScreen(navController = navController)
         }
-
     }
 }
