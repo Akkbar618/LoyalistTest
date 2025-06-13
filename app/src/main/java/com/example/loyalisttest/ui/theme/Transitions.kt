@@ -9,9 +9,8 @@ object Transitions {
 
     // Определяем порядок экранов для правильной анимации
     private val screenOrder = mapOf(
-        NavigationRoutes.Home.route to 0,
-        NavigationRoutes.Catalog.route to 1,
-        NavigationRoutes.Settings.route to 2
+        NavigationRoutes.Catalog.route to 0,
+        NavigationRoutes.Settings.route to 1
     )
 
     // Функция определения направления анимации

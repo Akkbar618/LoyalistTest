@@ -5,6 +5,7 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.example.loyalisttest.language.LanguageManager
+import com.example.loyalisttest.theme.ThemeManager
 
 class LoyalistApp : Application() {
     override fun onCreate() {
@@ -12,6 +13,7 @@ class LoyalistApp : Application() {
 
         // Initialize language first to ensure proper localization
         LanguageManager.init(this)
+        ThemeManager.init(this)
 
         // Initialize Firebase
         FirebaseApp.initializeApp(this)

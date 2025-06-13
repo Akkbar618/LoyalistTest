@@ -50,7 +50,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.firebase.firestore.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -68,11 +67,8 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(libs.zxing.android.embedded)
     implementation(libs.play.services.auth)
-
     // Firebase BOM уже добавлен, просто убедитесь что есть все нужные сервисы
 
-
     implementation(libs.firebase.firestore.ktx)
-
 
 }

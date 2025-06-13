@@ -16,6 +16,7 @@ import com.example.loyalisttest.language.LocalizedContent
 import com.example.loyalisttest.navigation.NavigationRoutes
 import com.example.loyalisttest.navigation.SetupNavGraph
 import com.example.loyalisttest.ui.theme.LoyalistTheme
+import com.example.loyalisttest.theme.ThemeManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,10 +24,12 @@ class MainActivity : ComponentActivity() {
 
         // Initialize language manager
         LanguageManager.init(this)
+        ThemeManager.init(this)
 
         enableEdgeToEdge()
         setContent {
-            LoyalistTheme {
+            val isDarkTheme by ThemeManager.darkTheme
+            LoyalistTheme(darkTheme = isDarkTheme) {
                 LocalizedContent {
                     val navController = rememberNavController()
                     var startDestination by remember {

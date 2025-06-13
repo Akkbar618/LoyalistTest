@@ -58,15 +58,12 @@
     <string name="settings_cancel">Cancel</string>
     <string name="settings_user_section">User Profile</string>
     <string name="default_user_name">User</string>
-
-    <!-- Home Screen -->
-    <string name="home_greeting">Hello,\n%1$s!</string>
-    <string name="home_history">Progress History</string>
-    <string name="home_your_qr">Your QR Code</string>
-    <string name="home_no_progress">You don\'t have any progress yet</string>
-    <string name="home_total_rewards">Rewards received: %1$d</string>
-    <string name="home_progress_count">%1$d of %2$d</string>
-    <string name="home_last_update">Last update: %1$s</string>
+    <string name="settings_dark_theme">Dark theme</string>
+    <string name="settings_edit_name">Name</string>
+    <string name="settings_edit_email">Email</string>
+    <string name="settings_save_profile">Save</string>
+    <string name="settings_profile_updated">Profile updated</string>
+    <string name="settings_error_updating_profile">Error updating profile: %1$s</string>
 
     <!-- Catalog Screen -->
     <string name="catalog_title">Catalog</string>
@@ -142,7 +139,6 @@
     <string name="error_updating_progress">Error updating progress: %1$s</string>
 
     <!-- Main Screen -->
-    <string name="nav_home">Home</string>
     <string name="nav_catalog">Catalog</string>
     <string name="nav_settings">Settings</string>
 
@@ -159,7 +155,6 @@
     <string name="history_product_label">Product: %1$s</string>
 
     <!-- Full QR Code Screen -->
-    <string name="qr_code_fullscreen">QR Code Fullscreen</string>
 
 
 </resources>

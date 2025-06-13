@@ -7,9 +7,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
@@ -37,6 +41,8 @@ fun AddCafeScreen(
     val context = LocalContext.current
     val firestore = FirebaseFirestore.getInstance()
     val currentUser = FirebaseAuth.getInstance().currentUser
+    val coroutineScope = rememberCoroutineScope()
+    val isLandscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 
     // Check access rights when loading screen
     LaunchedEffect(currentUser) {
@@ -87,34 +93,28 @@ fun AddCafeScreen(
             return
         }
 
-        isLoading = true
+        coroutineScope.launch {
+            isLoading = true
+            val cafeData = hashMapOf(
+                "name" to name.trim(),
+                "description" to description.trim(),
+                "category" to selectedCategory.name,
+                "active" to true,
+                "createdAt" to System.currentTimeMillis(),
+                "createdBy" to currentUser.uid
+            )
 
-        val cafeData = hashMapOf(
-            "name" to name.trim(),
-            "description" to description.trim(),
-            "category" to selectedCategory.name,
-            "active" to true,
-            "createdAt" to System.currentTimeMillis(),
-            "createdBy" to currentUser.uid
-        )
-
-        firestore.collection("cafes")
-            .add(cafeData)
-            .addOnSuccessListener { docRef ->
-                docRef.update(mapOf("id" to docRef.id))
-                    .addOnSuccessListener {
-                        Toast.makeText(context, context.getString(R.string.success_add_cafe), Toast.LENGTH_SHORT).show()
-                        navController.popBackStack()
-                    }
-                    .addOnFailureListener { e ->
-                        error = context.getString(R.string.error_updating_cafe_id, e.message ?: "")
-                        isLoading = false
-                    }
-            }
-            .addOnFailureListener { e ->
+            try {
+                val docRef = firestore.collection("cafes").add(cafeData).await()
+                docRef.update("id", docRef.id).await()
+                Toast.makeText(context, context.getString(R.string.success_add_cafe), Toast.LENGTH_SHORT).show()
+                navController.popBackStack()
+            } catch (e: Exception) {
                 error = context.getString(R.string.error_adding_cafe, e.message ?: "")
+            } finally {
                 isLoading = false
             }
+        }
     }
 
     Scaffold(
@@ -153,11 +153,13 @@ fun AddCafeScreen(
         } else {
             Column(
                 modifier = modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(paddingValues)
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .verticalScroll(rememberScrollState())
+                    .widthIn(max = if (isLandscape) 600.dp else Dp.Unspecified),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = if (isLandscape) Alignment.CenterHorizontally else Alignment.Start
             ) {
                 OutlinedTextField(
                     value = name,

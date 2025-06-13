@@ -58,15 +58,15 @@
     <string name="settings_cancel">Отмена</string>
     <string name="settings_user_section">Профиль пользователя</string>
     <string name="default_user_name">Пользователь</string>
+    <string name="settings_dark_theme">Темная тема</string>
+
+    <string name="settings_edit_name">Имя</string>
+    <string name="settings_edit_email">Email</string>
+    <string name="settings_save_profile">Сохранить</string>
+    <string name="settings_profile_updated">Профиль обновлен</string>
+    <string name="settings_error_updating_profile">Ошибка обновления профиля: %1$s</string>
 
 
-    <string name="home_greeting">Привет,\n%1$s!</string>
-    <string name="home_history">История прогресса</string>
-    <string name="home_your_qr">Ваш QR-код</string>
-    <string name="home_no_progress">У вас пока нет прогресса</string>
-    <string name="home_total_rewards">Получено наград: %1$d</string>
-    <string name="home_progress_count">%1$d из %2$d</string>
-    <string name="home_last_update">Последнее обновление: %1$s</string>
 
     <!-- Catalog Screen -->
     <string name="catalog_title">Каталог</string>
@@ -142,7 +142,6 @@
     <string name="error_updating_progress">Ошибка при обновлении прогресса: %1$s</string>
 
     <!-- Main Screen -->
-    <string name="nav_home">Home</string>
     <string name="nav_catalog">Catalog</string>
     <string name="nav_settings">Settings</string>
 
@@ -157,8 +156,5 @@
     <string name="history_user_label">User: %1$s</string>
     <string name="history_cafe_label">Cafe: %1$s</string>
     <string name="history_product_label">Product: %1$s</string>
-
-    <!-- Full QR Code Screen -->
-    <string name="qr_code_fullscreen">QR-код полноэкранный</string>
 
 </resources>
