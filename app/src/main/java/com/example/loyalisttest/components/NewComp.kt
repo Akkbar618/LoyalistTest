@@ -49,7 +49,7 @@ import androidx.compose.ui.res.vectorResource
 //
 //        Spacer(modifier = Modifier.height(20.dp).width(20.dp))
 //
-//        Text("Cofeeee")
+//        Text("Coffee")
 //
 //        Spacer(modifier = Modifier.height(20.dp).width(20.dp))
 //
