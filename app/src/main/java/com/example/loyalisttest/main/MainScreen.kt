@@ -43,11 +43,6 @@ fun MainScreen(navController: NavHostController) {
     // Bottom navigation items
     val navItems = listOf(
         Triple(
-            NavigationRoutes.Home.route,
-            stringResource(R.string.nav_home),
-            Icons.Default.Home
-        ),
-        Triple(
             NavigationRoutes.Catalog.route,
             stringResource(R.string.nav_catalog),
             Icons.Default.List
@@ -85,18 +80,10 @@ fun MainScreen(navController: NavHostController) {
     ) { paddingValues ->
         NavHost(
             navController = mainNavController,
-            startDestination = NavigationRoutes.Home.route,
+            startDestination = NavigationRoutes.Catalog.route,
             modifier = Modifier.padding(paddingValues)
         ) {
             // Base screens
-            composable(
-                route = NavigationRoutes.Home.route,
-                enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
-                exitTransition = { Transitions.bottomNavExitTransition(initialState, targetState) }
-            ) {
-                HomeScreen(mainNavController)
-            }
-
             composable(
                 route = NavigationRoutes.Catalog.route,
                 enterTransition = { Transitions.bottomNavEnterTransition(initialState, targetState) },
@@ -139,15 +126,7 @@ fun MainScreen(navController: NavHostController) {
                 AddProductScreen(mainNavController)
             }
 
-            // QR code and scanning
-            composable(
-                route = NavigationRoutes.QrCodeFullscreen.route,
-                enterTransition = { Transitions.enterScale() },
-                exitTransition = { Transitions.exitScale() }
-            ) {
-                QrCodeFullscreenScreen(mainNavController)
-            }
-
+            // QR scanning
             composable(
                 route = NavigationRoutes.QrScanner.route,
                 arguments = listOf(
